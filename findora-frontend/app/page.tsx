@@ -9,12 +9,6 @@ import {
   MessagesSquare,
   CheckCircle2,
   MapPin,
-  Wallet,
-  Smartphone,
-  KeyRound,
-  Backpack,
-  Cat,
-  Watch,
   ShieldCheck,
   Users,
   Building2,
@@ -69,12 +63,12 @@ const PHOTO_STEPS = [
 ];
 
 const CATEGORY_ICONS = [
-  { icon: Wallet, label: "Wallets" },
-  { icon: Smartphone, label: "Phones" },
-  { icon: KeyRound, label: "Keys" },
-  { icon: Backpack, label: "Bags" },
-  { icon: Cat, label: "Pets" },
-  { icon: Watch, label: "Watches" },
+  { img: "/wallet.jpeg", label: "Wallets" },
+  { img: "/phone.jpeg", label: "Phones" },
+  { img: "/key.jpg", label: "Keys" },
+  { img: "/bag.jpeg", label: "Bags" },
+  { img: "/dog.webp", label: "Pets" },
+  { img: "/watch.jpeg", label: "Watches" },
 ];
 
 const AUDIENCES = [
@@ -128,7 +122,7 @@ function HeroImage() {
       src="/home_page.png"
       alt="Findora — reuniting people with what they lost"
       onError={() => setFailed(true)}
-      className="aspect-[4/5] w-full rounded-3xl border border-slate-200 object-cover shadow-xl dark:border-slate-800"
+      className="aspect-[4/4] w-full rounded-3xl border border-slate-200 object-cover  dark:border-slate-800"
     />
   );
 }
@@ -315,12 +309,16 @@ export default function LandingPage() {
             {CATEGORY_ICONS.map((c, i) => (
               <div
                 key={c.label}
-                className="animate-in fade-in zoom-in-95 flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white py-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                className="animate-in fade-in zoom-in-95 group flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
                 style={{ animationDelay: `${i * 60}ms`, animationFillMode: "backwards" }}
               >
-                <span className="flex size-11 items-center justify-center rounded-xl bg-indigo-50 text-brand-indigo transition-transform duration-300 hover:rotate-6 dark:bg-indigo-500/10">
-                  <c.icon className="size-5" />
-                </span>
+                <div className="size-20 overflow-hidden rounded-xl ring-1 ring-slate-100 dark:ring-slate-800">
+                  <img
+                    src={c.img}
+                    alt={c.label}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  />
+                </div>
                 <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{c.label}</p>
               </div>
             ))}
@@ -331,12 +329,12 @@ export default function LandingPage() {
       {/* Powered by Community & Businesses */}
       <section id="trust" className="border-t border-slate-100 bg-slate-50 py-20 dark:border-slate-900 dark:bg-slate-900/40">
         <div className="mx-auto max-w-6xl px-6">
-          <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-2">
-            <div className="animate-in fade-in slide-in-from-left-3 overflow-hidden rounded-3xl border border-slate-200 shadow-md dark:border-slate-800">
+          <div className="grid grid-cols-1 items-stretch gap-10 md:grid-cols-2">
+            <div className="animate-in fade-in slide-in-from-left-3 h-full min-h-[300px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-md dark:border-slate-800 dark:bg-slate-800">
               <img
-                src="https://picsum.photos/seed/findora-community/800/650"
+                src="/community.jpg"
                 alt="People connecting through Findora"
-                className="aspect-[4/3.2] w-full object-cover"
+                className="h-full w-full object-cover"
               />
             </div>
             <div className="animate-in fade-in slide-in-from-right-3">
