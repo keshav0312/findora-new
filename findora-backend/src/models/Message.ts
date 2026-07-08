@@ -11,6 +11,11 @@ export interface IMessage extends Document {
     url: string;
     durationSeconds?: number;
   } | null;
+  location?: {
+    lat: number;
+    lng: number;
+    label?: string;
+  } | null;
   read: boolean;
   createdAt: Date;
 }
@@ -28,6 +33,17 @@ const MessageSchema = new Schema<IMessage>(
           kind: { type: String, enum: ["image", "audio"], required: true },
           url: { type: String, required: true },
           durationSeconds: { type: Number, default: 0 },
+        },
+        { _id: false }
+      ),
+      default: null,
+    },
+    location: {
+      type: new Schema(
+        {
+          lat: { type: Number, required: true },
+          lng: { type: Number, required: true },
+          label: { type: String, default: "" },
         },
         { _id: false }
       ),

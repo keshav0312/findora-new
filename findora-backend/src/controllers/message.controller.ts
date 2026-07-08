@@ -117,6 +117,60 @@ export const sendAttachment = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// A live location shared in chat: { matchId, recipient, lat, lng, label? }.
+export const sendLocation = async (req: AuthRequest, res: Response) => {
+  try {
+    const { matchId, recipient, lat, lng, label } = req.body;
+    if (!recipient || !matchId || lat === undefined || lng === undefined) {
+      return res
+        .status(400)
+        .json({ success: false, message: "matchId, recipient, lat and lng are required" });
+    }
+
+    const latitude = Number(lat);
+    const longitude = Number(lng);
+    if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+      return res.status(400).json({ success: false, message: "lat and lng must be valid numbers" });
+    }
+
+    const conversationId = conversationIdFor(matchId);
+    const message = await Message.create({
+      conversationId,
+      sender: req.user!.id,
+      recipient,
+      matchId,
+      text: "",
+      location: { lat: latitude, lng: longitude, label: label || "" },
+    });
+
+    await Notification.create({
+      user: recipient,
+      type: "message",
+      title: "New message",
+      body: "Shared a live location",
+      link: `/chat/${matchId}`,
+    });
+
+    const io = req.app.get("io");
+    if (io) {
+      io.to(conversationId).emit("message:new", message);
+      io.to(String(recipient)).emit("notification:new", {
+        _id: `live-${message._id}`,
+        type: "message",
+        title: "New message",
+        body: "Shared a live location",
+        link: `/chat/${matchId}`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    res.status(201).json({ success: true, data: message });
+  } catch (err) {
+    res.status(500).json({ success: false, message: (err as Error).message });
+  }
+};
+
 export const markConversationRead = async (req: AuthRequest, res: Response) => {
   try {
     const matchId = String(req.params.matchId);

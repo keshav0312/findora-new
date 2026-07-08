@@ -65,6 +65,45 @@ function VoiceBubble({ url, mine }: { url: string; mine: boolean }) {
   );
 }
 
+function LocationBubble({
+  location,
+  mine,
+}: {
+  location: { lat: number; lng: number; label?: string };
+  mine: boolean;
+}) {
+  const mapsUrl = `https://www.google.com/maps?q=${location.lat},${location.lng}`;
+  return (
+    <div className="mb-1 w-56 max-w-full">
+      <div className="overflow-hidden rounded-lg">
+        <LiveMap
+          className="h-32 w-full"
+          zoom={15}
+          pins={[
+            {
+              id: "shared-location",
+              lat: location.lat,
+              lng: location.lng,
+              label: location.label || "Shared location",
+            },
+          ]}
+        />
+      </div>
+      <a
+        href={mapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`mt-1.5 flex items-center gap-1 text-xs font-medium underline ${
+          mine ? "text-white" : "text-brand-indigo"
+        }`}
+      >
+        <MapPin className="size-3.5" />
+        {location.label || "Open live location in Maps"}
+      </a>
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const { user } = useAuth();
   const params = useParams<{ matchId: string }>();
@@ -76,6 +115,7 @@ export default function ChatPage() {
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [showTrackingMap, setShowTrackingMap] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
+  const [sharingLocation, setSharingLocation] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -188,6 +228,39 @@ export default function ChatPage() {
     } catch {
       // no-op
     }
+  };
+
+  const shareLiveLocation = () => {
+    if (!otherParty || !user || sharingLocation) return;
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      alert("Location sharing isn't supported on this device.");
+      return;
+    }
+    setSharingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await api.post<{ data: ChatMessage }>("/messages/location", {
+            matchId: params.matchId,
+            recipient: otherParty._id,
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+          setMessages((prev) =>
+            prev.some((m) => m._id === res.data._id) ? prev : [...prev, res.data]
+          );
+        } catch {
+          // no-op — real app would surface a retry affordance
+        } finally {
+          setSharingLocation(false);
+        }
+      },
+      () => {
+        setSharingLocation(false);
+        alert("Couldn't get your location. Please allow location access and try again.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   const onPickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -348,6 +421,7 @@ export default function ChatPage() {
                     />
                   )}
                   {m.attachment?.kind === "audio" && <VoiceBubble url={m.attachment.url} mine={mine} />}
+                  {m.location && <LocationBubble location={m.location} mine={mine} />}
                   {m.text && <p className="whitespace-pre-wrap">{m.text}</p>}
                   <div className={`mt-1 flex items-center gap-1 text-[10px] ${mine ? "text-white/70" : "text-slate-400"}`}>
                     <span>{timeAgo(m.createdAt)}</span>
@@ -383,6 +457,20 @@ export default function ChatPage() {
             title="Send a photo"
           >
             <ImageIcon className="size-4.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={shareLiveLocation}
+            disabled={sharingLocation || !otherParty}
+            className="flex size-10 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-50 hover:text-brand-indigo disabled:opacity-50 dark:hover:bg-slate-800"
+            title="Share your live location"
+          >
+            {sharingLocation ? (
+              <span className="size-4 animate-spin rounded-full border-2 border-brand-indigo border-t-transparent" />
+            ) : (
+              <MapPin className="size-4.5" />
+            )}
           </button>
 
           {recording ? (

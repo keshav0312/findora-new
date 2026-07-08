@@ -3,6 +3,7 @@ import {
   getConversation,
   sendMessage,
   sendAttachment,
+  sendLocation,
   myConversations,
   markConversationRead,
 } from "../controllers/message.controller.js";
@@ -15,6 +16,7 @@ router.get("/", protect, myConversations);
 router.get("/:matchId", protect, getConversation);
 router.post("/", protect, sendMessage);
 router.post("/upload", protect, chatUpload.single("file"), sendAttachment);
+router.post("/location", protect, sendLocation);
 router.post("/:matchId/read", protect, markConversationRead);
 
 export default router;

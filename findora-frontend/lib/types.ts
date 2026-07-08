@@ -81,6 +81,7 @@ export interface ChatMessage {
   matchId?: string;
   text: string;
   attachment?: { kind: "image" | "audio"; url: string; durationSeconds?: number } | null;
+  location?: { lat: number; lng: number; label?: string } | null;
   read: boolean;
   createdAt: string;
 }

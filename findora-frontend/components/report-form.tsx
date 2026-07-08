@@ -6,6 +6,7 @@ import { Loader2, Upload, X, Plus, Trash2 } from "lucide-react";
 import { CATEGORIES } from "@/lib/types";
 import { api, ApiError } from "@/lib/api";
 import { LiveMap } from "./live-map";
+import { LocationSearch, GeoResult } from "./location-search";
 
 export function ReportForm({ kind }: { kind: "lost" | "found" }) {
   const router = useRouter();
@@ -23,8 +24,19 @@ export function ReportForm({ kind }: { kind: "lost" | "found" }) {
   const [questions, setQuestions] = useState<{ question: string; answer: string }[]>([]);
   const [photos, setPhotos] = useState<File[]>([]);
   const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number } | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const onGeoSelect = (r: GeoResult) => {
+    setPickedLocation({ lat: r.lat, lng: r.lng });
+    setMapCenter({ lat: r.lat, lng: r.lng });
+    setForm((f) => ({
+      ...f,
+      location: r.label,
+      city: f.city || r.city || "",
+    }));
+  };
 
   const addQuestion = () => setQuestions([...questions, { question: "", answer: "" }]);
   const updateQuestion = (i: number, key: "question" | "answer", value: string) => {
@@ -185,13 +197,20 @@ export function ReportForm({ kind }: { kind: "lost" | "found" }) {
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <p className="font-heading text-sm font-semibold text-slate-900">Pin the exact spot</p>
           <p className="mt-1 text-xs text-slate-500">
-            Tap the map to drop a pin — this powers location-based AI matching and lets others see
-            roughly where the item was {kind === "lost" ? "lost" : "found"}.
+            Search for the place where you {kind === "lost" ? "lost" : "found"} the item, or tap the
+            map to drop a pin — this powers location-based AI matching.
           </p>
+          <div className="mt-3">
+            <LocationSearch
+              onSelect={onGeoSelect}
+              placeholder={`Search where you ${kind === "lost" ? "lost" : "found"} it…`}
+            />
+          </div>
           <div className="mt-3">
             <LiveMap
               className="aspect-square w-full"
               pickable
+              center={mapCenter}
               pickedLocation={pickedLocation}
               onPick={setPickedLocation}
             />
