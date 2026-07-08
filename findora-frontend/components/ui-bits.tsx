@@ -105,6 +105,41 @@ export function StatCard({
   );
 }
 
+/** Card wrapper with an icon header, used across the admin & police dashboards. */
+export function ChartCard({
+  title,
+  icon: Icon,
+  children,
+  className,
+  action,
+}: {
+  title: string;
+  icon?: LucideIcon;
+  children: React.ReactNode;
+  className?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900",
+        className
+      )}
+    >
+      <div className="mb-4 flex items-center gap-2">
+        {Icon && (
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-indigo/10 text-brand-indigo">
+            <Icon className="size-4" />
+          </span>
+        )}
+        <p className="font-heading text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
+        {action && <div className="ml-auto">{action}</div>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function Avatar({
   name,
   src,

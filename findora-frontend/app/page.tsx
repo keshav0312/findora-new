@@ -88,7 +88,7 @@ export default function LandingPage() {
         <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 pb-20 pt-10 md:grid-cols-2 md:pt-16">
           <div className="animate-in fade-in slide-in-from-left-4 duration-700">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-brand-indigo dark:bg-indigo-500/10">
-              <Sparkles className="size-3.5 animate-pulse" /> Community-powered &amp; AI-matched
+              <Sparkles className="size-3.5 animate-pulse" />Community-powered &amp; AI-matched
             </span>
             <h1 className="mt-5 font-heading text-4xl font-bold leading-[1.1] tracking-tight text-slate-900 dark:text-slate-100 md:text-5xl">
               Lost Something?

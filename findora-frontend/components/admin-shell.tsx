@@ -48,7 +48,7 @@ export function AdminShell({
 
   useEffect(() => {
     if (!loading) {
-      if (!user) router.replace("/login");
+      if (!user) router.replace(variant === "admin" ? "/admin/login" : "/police/login");
       else if (variant === "admin" && user.role !== "admin") router.replace("/dashboard");
       else if (variant === "police" && !["admin", "police"].includes(user.role)) router.replace("/dashboard");
     }
