@@ -95,6 +95,49 @@ export const listUsers = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Admin-only: create a new staff account (admin or police). Password is hashed
+// by the User model's pre-save hook; the account is created pre-verified.
+export const createStaff = async (req: AuthRequest, res: Response) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: "Name, email and password are required" });
+    }
+    if (String(password).length < 6) {
+      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+    }
+    if (!["admin", "police"].includes(role)) {
+      return res.status(400).json({ success: false, message: "Role must be 'admin' or 'police'" });
+    }
+
+    const existing = await User.findOne({ email: String(email).toLowerCase() });
+    if (existing) {
+      return res.status(409).json({ success: false, message: "An account with this email already exists" });
+    }
+
+    const user = await User.create({ name, email, password, role, isVerified: true });
+
+    res.status(201).json({
+      success: true,
+      message: `${role === "admin" ? "Admin" : "Police"} account created`,
+      data: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        role: user.role,
+        isVerified: user.isVerified,
+        trustPoints: user.trustPoints,
+        badge: user.badge,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: (err as Error).message });
+  }
+};
+
 export const banUser = async (req: AuthRequest, res: Response) => {
   try {
     // Modeled as role downgrade + isVerified=false; extend with a real
