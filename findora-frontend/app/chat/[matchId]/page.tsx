@@ -75,16 +75,20 @@ export default function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [showTrackingMap, setShowTrackingMap] = useState(false);
+  const [peerTyping, setPeerTyping] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordChunks = useRef<Blob[]>([]);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingEmit = useRef(0);
+  const otherIdRef = useRef<string | null>(null);
   const conversationId = `match_${params.matchId}`;
 
   const online = usePresence();
-  const { typingUser, notifyTyping, notifyStoppedTyping, notifyRead } = useConversationSignals(conversationId);
+  const { notifyRead } = useConversationSignals(conversationId);
 
   const otherParty =
     match && user
@@ -94,6 +98,10 @@ export default function ChatPage() {
       : null;
 
   const call = useCall(conversationId, otherParty?._id, otherParty?.name);
+
+  useEffect(() => {
+    otherIdRef.current = otherParty?._id ?? null;
+  }, [otherParty]);
 
   useEffect(() => {
     api.get<{ data: MatchRecord[] }>("/matches").then((r) => {
@@ -110,8 +118,16 @@ export default function ChatPage() {
     socket.emit("conversation:join", conversationId);
     socket.on("message:new", (msg: ChatMessage) => {
       setMessages((prev) => (prev.some((m) => m._id === msg._id) ? prev : [...prev, msg]));
+      setPeerTyping(false);
+    });
+    socket.on("typing", ({ userId }: { userId: string }) => {
+      if (!userId || userId !== otherIdRef.current) return;
+      setPeerTyping(true);
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+      typingTimeout.current = setTimeout(() => setPeerTyping(false), 3000);
     });
     return () => {
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
       socket.emit("conversation:leave", conversationId);
       socket.disconnect();
     };
@@ -119,7 +135,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingUser]);
+  }, [messages, peerTyping]);
 
   // Mark the thread read once messages are loaded/visible.
   useEffect(() => {
@@ -134,12 +150,19 @@ export default function ChatPage() {
 
   const isOnline = otherParty ? online.has(otherParty._id) : false;
 
+  const emitTyping = (value: string) => {
+    if (!value.trim() || !user) return;
+    const now = Date.now();
+    if (now - lastTypingEmit.current < 1000) return; // throttle
+    lastTypingEmit.current = now;
+    socketRef.current?.emit("typing", { conversationId, userId: user.id, name: user.name });
+  };
+
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() || !otherParty || !user || sending) return;
     const body = { matchId: params.matchId, recipient: otherParty._id, text };
     setText("");
-    notifyStoppedTyping();
     setSending(true);
     try {
       const res = await api.post<{ data: ChatMessage }>("/messages", body);
@@ -246,7 +269,7 @@ export default function ChatPage() {
               Chat with {otherParty?.name || "Findora user"}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {typingUser ? (
+              {peerTyping ? (
                 <span className="font-medium text-brand-indigo">typing…</span>
               ) : isOnline ? (
                 <span className="text-emerald-600 dark:text-emerald-400">Online</span>
@@ -339,7 +362,7 @@ export default function ChatPage() {
               Say hello and share a detail only the real owner would know.
             </p>
           )}
-          {typingUser && (
+          {peerTyping && (
             <div className="flex justify-start">
               <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm bg-slate-100 px-4 py-3 dark:bg-slate-800">
                 <span className="size-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
@@ -372,9 +395,8 @@ export default function ChatPage() {
               value={text}
               onChange={(e) => {
                 setText(e.target.value);
-                notifyTyping();
+                emitTyping(e.target.value);
               }}
-              onBlur={notifyStoppedTyping}
               placeholder="Type a message..."
               className="input-plain flex-1"
             />

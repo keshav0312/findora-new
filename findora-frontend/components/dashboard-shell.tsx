@@ -64,7 +64,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }, [loading, user, router]);
 
   useEffect(() => {
-    if (!liveNotification) return;
+    // Only pop a toast when someone sends a new message — other real-time
+    // events (matches, claims, returns, etc.) still update the app silently.
+    if (!liveNotification || liveNotification.type !== "message") return;
     setToast(liveNotification.title);
     const t = setTimeout(() => setToast(null), 5000);
     return () => clearTimeout(t);
@@ -201,7 +203,6 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <Bell className="mt-0.5 size-4 shrink-0 text-brand-indigo" />
           <div>
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{toast}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Real-time update via Socket.IO</p>
           </div>
         </div>
       )}

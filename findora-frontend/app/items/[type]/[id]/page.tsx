@@ -118,6 +118,7 @@ export default function ItemDetailsPage() {
                     alt={item.title}
                     width={800}
                     height={450}
+                    unoptimized
                     className="size-full object-cover"
                   />
                 ) : (
@@ -136,7 +137,7 @@ export default function ItemDetailsPage() {
                         activePhoto === i ? "border-brand-indigo" : "border-transparent"
                       }`}
                     >
-                      <Image src={resolveImage(p)!} alt="" width={56} height={56} className="size-full object-cover" />
+                      <Image src={resolveImage(p)!} alt="" width={56} height={56} unoptimized className="size-full object-cover" />
                     </button>
                   ))}
                 </div>

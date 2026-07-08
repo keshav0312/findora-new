@@ -118,67 +118,49 @@ export function usePresence() {
 }
 
 /**
- * Typing indicator + read-receipt helper for a single chat conversation.
- * Emits `typing` while the user types (throttled + auto-expiring), listens
- * for the other party's typing/read events, and exposes a `notifyRead`
- * function to call once messages have been viewed.
+ * Read-receipt helper for a single chat conversation. Joins the conversation
+ * room on the shared socket so the server's relayed `message:read` events are
+ * received, tracks when the other party last read, and exposes `notifyRead`
+ * to call once messages have been viewed.
+ *
+ * Note: the live typing indicator is handled directly on the chat page's own
+ * socket (see app/chat/[matchId]/page.tsx), so it is intentionally not part of
+ * this hook.
  */
 export function useConversationSignals(conversationId: string | null) {
   const { user } = useAuth();
-  const [typingUser, setTypingUser] = useState<{ userId: string; name?: string } | null>(null);
   const [readAt, setReadAt] = useState<number | null>(null);
-  const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastEmit = useRef(0);
 
   useEffect(() => {
     if (!conversationId || !user) return;
     const socket = getSocket();
 
-    function onTyping(payload: { conversationId: string; userId: string; name?: string }) {
-      if (payload.conversationId !== conversationId || payload.userId === user!.id) return;
-      setTypingUser({ userId: payload.userId, name: payload.name });
-      if (typingTimeout.current) clearTimeout(typingTimeout.current);
-      typingTimeout.current = setTimeout(() => setTypingUser(null), 3000);
-    }
-    function onTypingStop(payload: { conversationId: string; userId: string }) {
-      if (payload.conversationId !== conversationId || payload.userId === user!.id) return;
-      setTypingUser(null);
-    }
+    // The shared singleton socket must be a member of the conversation room to
+    // receive the server's relayed read events. (The chat page uses a separate
+    // socket for message:new, so joining there is not enough.)
+    const joinRoom = () => socket.emit("conversation:join", conversationId);
+    if (socket.connected) joinRoom();
+    socket.on("connect", joinRoom);
+
     function onRead(payload: { conversationId: string; userId: string }) {
       if (payload.conversationId !== conversationId || payload.userId === user!.id) return;
       setReadAt(Date.now());
     }
 
-    socket.on("typing", onTyping);
-    socket.on("typing:stop", onTypingStop);
     socket.on("message:read", onRead);
     return () => {
-      socket.off("typing", onTyping);
-      socket.off("typing:stop", onTypingStop);
+      socket.emit("conversation:leave", conversationId);
+      socket.off("connect", joinRoom);
       socket.off("message:read", onRead);
-      if (typingTimeout.current) clearTimeout(typingTimeout.current);
     };
   }, [conversationId, user]);
-
-  function notifyTyping() {
-    if (!conversationId || !user) return;
-    const now = Date.now();
-    if (now - lastEmit.current < 1500) return; // throttle
-    lastEmit.current = now;
-    getSocket().emit("typing", { conversationId, userId: user.id, name: user.name });
-  }
-
-  function notifyStoppedTyping() {
-    if (!conversationId || !user) return;
-    getSocket().emit("typing:stop", { conversationId, userId: user.id });
-  }
 
   function notifyRead() {
     if (!conversationId || !user) return;
     getSocket().emit("message:read", { conversationId, userId: user.id });
   }
 
-  return { typingUser, readAt, notifyTyping, notifyStoppedTyping, notifyRead };
+  return { readAt, notifyRead };
 }
 
 export interface AdminActivityEvent {

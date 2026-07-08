@@ -134,6 +134,7 @@ export function Avatar({
         alt={name || "avatar"}
         width={size * 4}
         height={size * 4}
+        unoptimized
         className={cn("rounded-full object-cover shrink-0", dim.split(" ")[0])}
       />
     );

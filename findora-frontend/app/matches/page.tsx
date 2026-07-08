@@ -169,7 +169,7 @@ function MatchItemPreview({ label, report, owner }: { label: string; report: any
   return (
     <div className="flex gap-3 rounded-xl border border-slate-100 p-3 dark:border-slate-800">
       <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
-        {photo && <Image src={photo} alt="" width={48} height={48} className="size-full object-cover" />}
+        {photo && <Image src={photo} alt="" width={48} height={48} unoptimized className="size-full object-cover" />}
       </div>
       <div className="min-w-0">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
