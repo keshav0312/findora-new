@@ -1,0 +1,210 @@
+"use client";
+
+import { ReactNode, useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  FileText,
+  MessagesSquare,
+  Bell,
+  Search,
+  User as UserIcon,
+  Settings,
+  LogOut,
+  Plus,
+  MapPin,
+  Shield,
+  Trophy,
+  Bookmark,
+} from "lucide-react";
+import { Logo } from "./logo";
+import { Avatar } from "./ui-bits";
+import { ThemeToggle } from "./theme-toggle";
+import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
+import { useUserSocket, useLiveNotifications } from "@/lib/socket";
+
+const NAV = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/my-reports", label: "My Reports", icon: FileText },
+  { href: "/matches", label: "Matches", icon: MapPin },
+  { href: "/search", label: "Search / Explore", icon: Search },
+  { href: "/saved", label: "Saved Items", icon: Bookmark },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { href: "/notifications", label: "Notifications", icon: Bell },
+  { href: "/profile", label: "My Profile", icon: UserIcon },
+  { href: "/settings", label: "Settings", icon: Settings },
+];
+
+// Compact set for the mobile bottom tab bar — only the highest-traffic
+// destinations fit comfortably, Flipkart-app style.
+const MOBILE_TABS = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/search", label: "Explore", icon: Search },
+  { href: "/report", label: "Report", icon: Plus, cta: true },
+  { href: "/matches", label: "Matches", icon: MapPin },
+  { href: "/profile", label: "Profile", icon: UserIcon },
+];
+
+export function DashboardShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
+  const [query, setQuery] = useState("");
+
+  // Joins this user's private Socket.IO room so the server can push
+  // real-time match/notification/chat events straight to this browser tab.
+  useUserSocket();
+  const liveNotification = useLiveNotifications();
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!loading && !user) router.replace("/login");
+  }, [loading, user, router]);
+
+  useEffect(() => {
+    if (!liveNotification) return;
+    setToast(liveNotification.title);
+    const t = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(t);
+  }, [liveNotification]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="size-8 animate-spin rounded-full border-2 border-brand-indigo border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-slate-800/50 bg-brand-ink px-4 py-6 lg:flex">
+        <Logo dark />
+        <nav className="mt-8 flex flex-1 flex-col gap-1 overflow-y-auto scrollbar-thin">
+          {NAV.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                  active
+                    ? "bg-brand-indigo text-white shadow-sm shadow-brand-indigo/30"
+                    : "text-slate-300 hover:translate-x-0.5 hover:bg-white/5 hover:text-white"
+                )}
+              >
+                <item.icon className="size-4.5" />
+                {item.label}
+              </Link>
+            );
+          })}
+          {(user.role === "admin" || user.role === "police") && (
+            <Link
+              href={user.role === "admin" ? "/admin" : "/police"}
+              className="mt-2 flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+            >
+              <Shield className="size-4.5" />
+              {user.role === "admin" ? "Admin Dashboard" : "Police Dashboard"}
+            </Link>
+          )}
+        </nav>
+        <button
+          onClick={() => {
+            logout();
+            router.push("/");
+          }}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white"
+        >
+          <LogOut className="size-4.5" />
+          Log out
+        </button>
+      </aside>
+
+      <div className="flex flex-1 flex-col lg:pl-64">
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur transition-colors duration-300 dark:border-slate-800 dark:bg-slate-900/90 lg:px-8">
+          <div className="lg:hidden">
+            <Logo />
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              router.push(`/search?q=${encodeURIComponent(query)}`);
+            }}
+            className="relative hidden max-w-md flex-1 sm:block"
+          >
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search items, categories, locations..."
+              className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition focus:border-brand-indigo focus:ring-2 focus:ring-brand-indigo/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+            />
+          </form>
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle className="hidden sm:flex" />
+            <Link
+              href="/report"
+              className="hidden items-center gap-1.5 rounded-full bg-brand-indigo px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-indigo/30 transition hover:-translate-y-0.5 hover:bg-brand-indigo-dark hover:shadow-md sm:flex"
+            >
+              <Plus className="size-4" /> Report
+            </Link>
+            <Link
+              href="/notifications"
+              className="flex size-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              <Bell className="size-4.5" />
+            </Link>
+            <Link href="/profile">
+              <Avatar name={user.name} src={user.avatar} size={9} />
+            </Link>
+          </div>
+        </header>
+        <main className="flex-1 px-4 py-6 pb-24 lg:px-8 lg:pb-6">{children}</main>
+      </div>
+
+      {/* Mobile bottom tab bar — Flipkart/e-commerce app style quick nav */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white/95 px-2 py-2 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
+        {MOBILE_TABS.map((tab) => {
+          const active = pathname === tab.href || pathname.startsWith(tab.href + "/");
+          if (tab.cta) {
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className="-mt-6 flex size-14 items-center justify-center rounded-full bg-brand-indigo text-white shadow-lg shadow-brand-indigo/40 transition active:scale-95"
+              >
+                <tab.icon className="size-6" />
+              </Link>
+            );
+          }
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                "flex flex-col items-center gap-0.5 rounded-xl px-3 py-1 text-[10px] font-medium transition-colors",
+                active ? "text-brand-indigo" : "text-slate-400 dark:text-slate-500"
+              )}
+            >
+              <tab.icon className="size-5" />
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {toast && (
+        <div className="animate-in slide-in-from-bottom-4 fixed bottom-24 right-6 z-50 flex max-w-xs items-start gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-lg shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900 lg:bottom-6">
+          <Bell className="mt-0.5 size-4 shrink-0 text-brand-indigo" />
+          <div>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{toast}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Real-time update via Socket.IO</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
