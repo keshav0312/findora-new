@@ -163,6 +163,13 @@
   .animate-blob {
     animation: blob 9s ease-in-out infinite;
   }
+  @keyframes wave {
+    0%, 60%, 100% { transform: rotate(0deg); }
+    10%, 30% { transform: rotate(14deg); }
+    20% { transform: rotate(-8deg); }
+    40% { transform: rotate(-4deg); }
+    50% { transform: rotate(10deg); }
+  }
   .input {
     width: 100%;
     border-radius: 0.75rem;

@@ -55,7 +55,7 @@ export function ItemCard({ item, kind }: { item: Report; kind: "lost" | "found" 
     >
       <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 text-slate-300 dark:bg-slate-800 dark:text-slate-600">
         {photo ? (
-          <Image src={photo} alt={item.title} width={64} height={64} className="size-full object-cover transition-transform duration-500 group-hover:scale-110" />
+          <Image src={photo} alt={item.title} width={64} height={64} unoptimized className="size-full object-cover transition-transform duration-500 group-hover:scale-110" />
         ) : (
           <ImageOff className="size-6" />
         )}

@@ -137,13 +137,13 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          <div className="mt-6 flex items-center gap-3">
+          {/* <div className="mt-6 flex items-center gap-3">
             <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Staff access</span>
             <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-          </div>
+          </div> */}
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          {/* <div className="mt-4 grid grid-cols-2 gap-3">
             <Link
               href="/admin/login"
               className="flex items-center justify-center gap-2 rounded-full border border-slate-200 py-2 text-xs font-semibold text-slate-600 transition hover:border-brand-indigo hover:text-brand-indigo dark:border-slate-700 dark:text-slate-300"
@@ -158,7 +158,7 @@ export default function LoginPage() {
               <ShieldCheck className="size-3.5" />
               Police login
             </Link>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
