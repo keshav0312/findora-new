@@ -25,16 +25,24 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { useUserSocket, useLiveNotifications } from "@/lib/socket";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/my-reports", label: "My Reports", icon: FileText },
-  { href: "/matches", label: "Matches", icon: MapPin },
-  { href: "/search", label: "Search / Explore", icon: Search },
-  { href: "/saved", label: "Saved Items", icon: Bookmark },
-  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "/notifications", label: "Notifications", icon: Bell },
-  { href: "/profile", label: "My Profile", icon: UserIcon },
-  { href: "/settings", label: "Settings", icon: Settings },
+const NAV_GROUPS = [
+  {
+    label: "Workspace",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/my-reports", label: "My Reports", icon: FileText },
+      { href: "/matches", label: "Matches", icon: MapPin },
+      { href: "/search", label: "Search / Explore", icon: Search },
+      { href: "/saved", label: "Saved Items", icon: Bookmark },
+    ],
+  },
+  {
+    label: "Community",
+    items: [
+      { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+      { href: "/notifications", label: "Notifications", icon: Bell },
+    ],
+  },
 ];
 
 // Compact set for the mobile bottom tab bar — only the highest-traffic
@@ -82,47 +90,83 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-slate-800/50 bg-brand-ink px-4 py-6 lg:flex">
-        <Logo dark />
-        <nav className="mt-8 flex flex-1 flex-col gap-1 overflow-y-auto scrollbar-thin">
-          {NAV.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  active
-                    ? "bg-brand-indigo text-white shadow-sm shadow-brand-indigo/30"
-                    : "text-slate-300 hover:translate-x-0.5 hover:bg-white/5 hover:text-white"
-                )}
-              >
-                <item.icon className="size-4.5" />
-                {item.label}
-              </Link>
-            );
-          })}
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-white/5 bg-brand-ink px-3 py-5 lg:flex">
+        <div className="flex items-center justify-between px-2">
+          <Logo dark />
+          <span className="flex items-center gap-1 rounded-full bg-white/5 px-2 py-1 text-[10px] font-medium text-emerald-300">
+            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> Live
+          </span>
+        </div>
+
+        <nav className="mt-7 flex flex-1 flex-col gap-5 overflow-y-auto px-1 scrollbar-thin">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                {group.label}
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {group.items.map((item) => {
+                  const active = pathname === item.href || pathname.startsWith(item.href + "/");
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "relative flex items-center gap-3 rounded-lg py-2.5 pl-3.5 pr-3 text-sm font-medium transition-all duration-200",
+                        active ? "bg-white/[0.07] text-white" : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-brand-indigo transition-all duration-200",
+                          active ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <item.icon className={cn("size-4.5", active && "text-brand-indigo")} />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
           {(user.role === "admin" || user.role === "police") && (
             <Link
               href={user.role === "admin" ? "/admin" : "/police"}
-              className="mt-2 flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/5 hover:text-white"
+              className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-3.5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/[0.06] hover:text-white"
             >
               <Shield className="size-4.5" />
               {user.role === "admin" ? "Admin Dashboard" : "Police Dashboard"}
             </Link>
           )}
         </nav>
-        <button
-          onClick={() => {
-            logout();
-            router.push("/");
-          }}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/5 hover:text-white"
-        >
-          <LogOut className="size-4.5" />
-          Log out
-        </button>
+
+        <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
+          <Link
+            href="/profile"
+            className="flex items-center gap-2.5 rounded-xl bg-white/[0.04] px-2.5 py-2 transition hover:bg-white/[0.08]"
+          >
+            <Avatar name={user.name} src={user.avatar} size={9} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+              <p className="truncate text-[11px] capitalize text-slate-400">
+                {user.badge && user.badge !== "none" ? `${user.badge} badge` : "New member"} · {user.trustPoints ?? 0} pts
+              </p>
+            </div>
+            <Settings className="size-4 shrink-0 text-slate-500" />
+          </Link>
+          <button
+            onClick={() => {
+              logout();
+              router.push("/");
+            }}
+            className="flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-sm font-medium text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-200"
+          >
+            <LogOut className="size-4.5" />
+            Log out
+          </button>
+        </div>
       </aside>
 
       <div className="flex flex-1 flex-col lg:pl-64">

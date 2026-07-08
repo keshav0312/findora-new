@@ -87,41 +87,80 @@ export default function DashboardPage() {
   const points = user?.trustPoints ?? 0;
   const badgeInfo = nextBadgeInfo(points);
   const firstName = user?.name?.split(" ")[0];
+  const ringPct = Math.max(4, Math.min(100, badgeInfo.pct));
+  const todayLabel = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
 
   return (
     <DashboardShell>
-      {/* Hero greeting banner */}
-      <div className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-indigo via-indigo-600 to-blue-600 p-6 shadow-lg shadow-brand-indigo/20 sm:p-8">
-        <div className="pointer-events-none absolute -right-10 -top-16 size-56 animate-blob rounded-full bg-white/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 left-1/3 size-48 animate-blob rounded-full bg-white/10 blur-3xl [animation-delay:3s]" />
+      {/* Console header — replaces the old giant gradient "Welcome back" banner */}
+      <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-2.5 dark:border-slate-800">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+            Overview
+          </p>
+          <p className="text-[11px] font-medium tabular-nums text-slate-400">{todayLabel}</p>
+        </div>
 
-        <div className="relative flex flex-wrap items-center justify-between gap-5">
-          <div className="animate-in fade-in slide-in-from-left-3 duration-500">
-            <p className="flex items-center gap-2 text-sm font-medium text-indigo-100">
-              Welcome back <span className="animate-[wave_1.6s_ease-in-out_infinite] inline-block origin-[70%_70%]">👋</span>
-            </p>
-            <h1 className="mt-1 font-heading text-2xl font-bold text-white sm:text-3xl">{firstName}</h1>
-            <p className="mt-2 text-sm text-indigo-100">
+        <div className="flex flex-wrap items-center gap-5 px-5 py-5">
+          <div className="relative shrink-0">
+            <svg viewBox="0 0 64 64" className="size-16 -rotate-90">
+              <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" strokeWidth="4" className="text-slate-100 dark:text-slate-800" />
+              <circle
+                cx="32"
+                cy="32"
+                r="28"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 28}
+                strokeDashoffset={2 * Math.PI * 28 * (1 - ringPct / 100)}
+                className="text-brand-indigo transition-all duration-1000 ease-out"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Avatar name={user?.name} src={user?.avatar} size={12} />
+            </div>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h1 className="font-heading text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">
+              Welcome back, {firstName} <span className="inline-block origin-[70%_70%] animate-[wave_1.6s_ease-in-out_infinite]">👋</span>
+            </h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               {matches.length > 0 ? (
                 <>
-                  You have <span className="font-semibold text-white">{matches.length}</span>{" "}
-                  {matches.length === 1 ? "match" : "matches"} waiting for you.
+                  <span className="font-semibold text-brand-indigo">{matches.length}</span>{" "}
+                  {matches.length === 1 ? "match is" : "matches are"} waiting for your review.
                 </>
               ) : (
-                "No matches yet — report an item and we'll find it for you."
+                "No matches yet — report an item and we'll track it for you."
               )}
             </p>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              <span className="rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-brand-red dark:bg-red-500/10">
+                {openLost} lost
+              </span>
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-brand-green dark:bg-emerald-500/10">
+                {openFound} found
+              </span>
+              <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold text-brand-orange dark:bg-orange-500/10">
+                {points} trust pts · {badgeInfo.next ? `${badgeInfo.needed - points} to ${badgeInfo.next}` : "Gold tier"}
+              </span>
+            </div>
           </div>
-          <div className="flex animate-in fade-in slide-in-from-right-3 flex-wrap gap-2 duration-500">
+
+          <div className="flex shrink-0 gap-2">
             <Link
               href="/report/lost"
-              className="flex items-center gap-1.5 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-brand-indigo shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              className="flex items-center gap-1.5 rounded-full bg-brand-indigo px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-indigo/25 transition hover:-translate-y-0.5 hover:bg-brand-indigo-dark hover:shadow-md"
             >
               <Plus className="size-4" /> Report Lost
             </Link>
             <Link
               href="/report/found"
-              className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20"
+              className="flex items-center gap-1.5 rounded-full border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-brand-indigo/40 hover:text-brand-indigo dark:border-slate-700 dark:text-slate-200"
             >
               <Plus className="size-4" /> Report Found
             </Link>
