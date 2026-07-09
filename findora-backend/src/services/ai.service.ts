@@ -31,7 +31,14 @@ function fallbackExplanation({ score, category, lostLocation, foundLocation }: E
 
 export async function explainMatch(args: ExplainArgs): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) return fallbackExplanation(args);
+  console.log("[ai] explainMatch called with:", JSON.stringify(args, null, 2));
+
+  if (!apiKey) {
+    console.log("[ai] GROQ_API_KEY not set — using fallback explanation (no AI call made)");
+    return fallbackExplanation(args);
+  }
+
+  console.log(`[ai] GROQ_API_KEY present. Model: ${GROQ_MODEL} | URL: ${GROQ_API_URL}`);
 
   const prompt = `You help reunite people with lost belongings. Two reports were matched by a scoring
 algorithm. Write ONE short, friendly sentence (max 30 words) explaining to a user why these two
@@ -42,6 +49,8 @@ Found item report: "${args.foundTitle}" found at ${args.foundLocation}
 Category: ${args.category}
 Match confidence: ${args.score}%
 Score breakdown (out of max): category ${args.breakdown.category}/25, location ${args.breakdown.location}/35, description ${args.breakdown.description}/20, date ${args.breakdown.date}/10, photo/color ${args.breakdown.image}/10`;
+
+  console.log("[ai] PROMPT SENT TO GROQ:\n" + prompt);
 
   try {
     const res = await fetch(GROQ_API_URL, {
@@ -58,13 +67,17 @@ Score breakdown (out of max): category ${args.breakdown.category}/25, location $
       }),
     });
 
+    console.log(`[ai] Groq HTTP status: ${res.status} ${res.statusText}`);
+
     if (!res.ok) {
       console.error(`[ai:error] Groq responded ${res.status}`);
       return fallbackExplanation(args);
     }
 
     const data = await res.json();
+    console.log("[ai] RAW GROQ RESPONSE:", JSON.stringify(data, null, 2));
     const text: string | undefined = data?.choices?.[0]?.message?.content?.trim();
+    console.log(`[ai] EXTRACTED AI TEXT: "${text ?? "(empty — falling back)"}"`);
     return text || fallbackExplanation(args);
   } catch (err) {
     console.error("[ai:error]", (err as Error).message);
@@ -79,7 +92,12 @@ Score breakdown (out of max): category ${args.breakdown.category}/25, location $
  */
 export async function semanticSimilarity(a: string, b: string): Promise<number | null> {
   const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey || (!a?.trim() && !b?.trim())) return null;
+  if (!apiKey || (!a?.trim() && !b?.trim())) {
+    console.log("[ai] semanticSimilarity skipped (no API key or empty descriptions)");
+    return null;
+  }
+
+  console.log(`[ai] semanticSimilarity called — Desc A: "${a}" | Desc B: "${b}"`);
 
   const prompt = `On a scale of 0 to 100, how likely do these two lost/found item descriptions refer
 to the exact same physical object? Reply with ONLY the number, nothing else.
@@ -101,13 +119,18 @@ Description B: "${b || "(none)"}"`;
         max_tokens: 5,
       }),
     });
+    console.log(`[ai] semanticSimilarity Groq HTTP status: ${res.status}`);
     if (!res.ok) return null;
     const data = await res.json();
     const text: string = data?.choices?.[0]?.message?.content || "";
+    console.log(`[ai] semanticSimilarity RAW RESPONSE: "${text}"`);
     const n = parseInt(text.replace(/[^0-9]/g, ""), 10);
     if (Number.isNaN(n)) return null;
-    return Math.max(0, Math.min(100, n)) / 100;
-  } catch {
+    const score = Math.max(0, Math.min(100, n)) / 100;
+    console.log(`[ai] semanticSimilarity FINAL SCORE: ${score}`);
+    return score;
+  } catch (err) {
+    console.error("[ai:error] semanticSimilarity", (err as Error).message);
     return null;
   }
 }
