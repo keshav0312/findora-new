@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 import { itemFieldDefs } from "./itemFields.js";
 
-export interface ILostItem extends Document {
+export interface IFoundItem extends Document {
   title: string;
   category: string;
   description: string;
@@ -21,15 +21,15 @@ export interface ILostItem extends Document {
   updatedAt: Date;
 }
 
-const LostItemSchema = new Schema<ILostItem>(itemFieldDefs as any, {
+const FoundItemSchema = new Schema<IFoundItem>(itemFieldDefs as any, {
   timestamps: true,
 });
 
-LostItemSchema.index({ category: 1, city: 1, status: 1 });
-LostItemSchema.index({ title: "text", description: "text", brand: "text" });
+FoundItemSchema.index({ category: 1, city: 1, status: 1 });
+FoundItemSchema.index({ title: "text", description: "text", brand: "text" });
 
-const LostItem: Model<ILostItem> =
-  mongoose.models.LostItem ||
-  mongoose.model<ILostItem>("LostItem", LostItemSchema);
+const FoundItem: Model<IFoundItem> =
+  mongoose.models.FoundItem ||
+  mongoose.model<IFoundItem>("FoundItem", FoundItemSchema);
 
-export default LostItem;
+export default FoundItem;
