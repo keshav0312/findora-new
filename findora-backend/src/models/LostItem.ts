@@ -8,6 +8,7 @@ export interface ILostItem extends Document {
   color: string;
   brand: string;
   location: string;
+    contactPhone: string;
   city: string;
   coordinates: { lat: number | null; lng: number | null };
   date: Date;

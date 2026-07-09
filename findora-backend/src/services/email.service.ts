@@ -113,15 +113,21 @@ export async function sendMatchNotificationEmail(
   name: string,
   itemTitle: string,
   score: number,
-  aiExplanation?: string
+  aiExplanation?: string,
+  distanceKm?: number | null
 ) {
   const url = `${FRONTEND_URL}/matches`;
+  const proximityLine =
+    distanceKm !== undefined && distanceKm !== null
+      ? `<br/>📍 <b>${distanceKm} km</b> away from where it was lost/found — very close by!`
+      : "";
   return sendEmail({
     to: { email: to, name },
     subject: `We found a possible match for "${itemTitle}" (${score}%)`,
     html: layout(
       "We found a possible match! 🎉",
       `Our AI matching engine found a <b>${score}% match</b> for <b>${itemTitle}</b>.` +
+        proximityLine +
         (aiExplanation ? `<br/><br/><i>${aiExplanation}</i>` : "") +
         "<br/><br/>Open Findora to review the details and start a chat with the other party.",
       "View match",

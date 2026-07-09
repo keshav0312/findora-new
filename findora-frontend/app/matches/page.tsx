@@ -83,9 +83,16 @@ export default function MatchesPage() {
                   {m.lostItem?.title} ↔ {m.foundItem?.title}
                 </p>
               </div>
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-brand-green dark:bg-emerald-500/10">
-                {m.score}% Match
-              </span>
+             <div className="flex items-center gap-2">
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-brand-green dark:bg-emerald-500/10">
+                  {m.score}% Match
+                </span>
+                {m.distanceKm !== undefined && m.distanceKm !== null && m.distanceKm <= 5 && (
+                  <span className="flex items-center gap-1 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+                    📍 {m.distanceKm} km away
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">

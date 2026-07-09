@@ -18,6 +18,7 @@ export function ReportForm({ kind }: { kind: "lost" | "found" }) {
     brand: "",
     location: "",
     city: "",
+    contactPhone: "",
     date: "",
     reward: "",
   });
@@ -112,6 +113,21 @@ export function ReportForm({ kind }: { kind: "lost" | "found" }) {
           {kind === "lost" && (
             <TextField label="Reward (₹, optional)" type="number" value={form.reward} onChange={(v) => setForm({ ...form, reward: v })} placeholder="1000" />
           )}
+        </div>
+
+        <div>
+          <TextField
+            label="Mobile number"
+            required
+            type="tel"
+            value={form.contactPhone}
+            onChange={(v) => setForm({ ...form, contactPhone: v })}
+            placeholder="e.g. 9876543210"
+          />
+          <p className="mt-1.5 text-[11px] text-slate-400">
+            Used to alert you by WhatsApp if a match turns up within 5 km, and shown to the other
+            party once you're matched so you can coordinate the handover.
+          </p>
         </div>
 
         <div>

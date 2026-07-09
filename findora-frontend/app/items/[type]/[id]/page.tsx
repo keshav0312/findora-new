@@ -11,6 +11,7 @@ import {
   Palette,
   Gift,
   MessageCircle,
+  Phone,
   CheckCircle2,
   ImageOff,
   Pencil,
@@ -212,13 +213,40 @@ export default function ItemDetailsPage() {
                   <p className="text-xs text-slate-500">Member since {formatDate(item.createdAt)}</p>
                 </div>
               </div>
+
+              {isOwner && item.contactPhone && (
+                <p className="mt-3 flex items-center gap-1.5 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  <Phone className="size-3.5" /> Your contact number: {item.contactPhone}
+                </p>
+              )}
+
               {!isOwner && (
-                <Link
-                  href="/matches"
-                  className="mt-4 flex items-center justify-center gap-2 rounded-full bg-brand-indigo py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo-dark"
-                >
-                  <MessageCircle className="size-4" /> Contact via matches
-                </Link>
+                <>
+                  {item.contactPhone && (
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <a
+                        href={`tel:${item.contactPhone}`}
+                        className="flex items-center justify-center gap-1.5 rounded-full border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        <Phone className="size-4" /> Call
+                      </a>
+                      <a
+                        href={`https://wa.me/${item.contactPhone.replace(/[^0-9]/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 py-2.5 text-sm font-semibold text-brand-green transition hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10"
+                      >
+                        <MessageCircle className="size-4" /> WhatsApp
+                      </a>
+                    </div>
+                  )}
+                  <Link
+                    href="/matches"
+                    className="mt-2 flex items-center justify-center gap-2 rounded-full bg-brand-indigo py-2.5 text-sm font-semibold text-white hover:bg-brand-indigo-dark"
+                  >
+                    <MessageCircle className="size-4" /> Contact via matches
+                  </Link>
+                </>
               )}
             </div>
             <LiveMap

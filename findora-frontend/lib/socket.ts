@@ -4,6 +4,7 @@ import { io, Socket } from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
 import { API_URL } from "./api";
 import { useAuth } from "./auth-context";
+import { haversineKm } from "./geo";
 import type { AppNotification } from "./types";
 
 // The backend serves both REST (/api/*) and Socket.IO on the same port —
@@ -161,6 +162,101 @@ export function useConversationSignals(conversationId: string | null) {
   }
 
   return { readAt, notifyRead };
+}
+
+export interface LiveLocationPoint {
+  lat: number;
+  lng: number;
+  at: number; // Date.now() when this fix was received
+}
+
+/**
+ * Continuous GPS location sharing between the two people in a chat
+ * conversation — used to show a live "how far apart are we right now" view
+ * while arranging an item handover (see components/live-tracking-panel.tsx).
+ *
+ * Nothing here touches the database: positions are relayed peer-to-peer
+ * through the server (`location:share` / `location:stop` in server.ts),
+ * the same pattern as typing indicators and WebRTC call signaling. Turning
+ * sharing off (or leaving the page) immediately stops broadcasting your
+ * position — the other party just stops receiving updates.
+ */
+export function useLiveLocationTracking(conversationId: string | null, enabled: boolean) {
+  const { user } = useAuth();
+  const [myLocation, setMyLocation] = useState<LiveLocationPoint | null>(null);
+  const [peerLocation, setPeerLocation] = useState<LiveLocationPoint | null>(null);
+  const [peerSharing, setPeerSharing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const watchId = useRef<number | null>(null);
+
+  // Listen for the other party's position, regardless of whether *we're*
+  // currently sharing ours — they might turn theirs on first.
+  useEffect(() => {
+    if (!conversationId || !user) return;
+    const socket = getSocket();
+
+    function onShare(payload: { conversationId: string; userId: string; lat: number; lng: number }) {
+      if (payload.conversationId !== conversationId || payload.userId === user!.id) return;
+      setPeerLocation({ lat: payload.lat, lng: payload.lng, at: Date.now() });
+      setPeerSharing(true);
+    }
+    function onStop(payload: { conversationId: string; userId: string }) {
+      if (payload.conversationId !== conversationId || payload.userId === user!.id) return;
+      setPeerSharing(false);
+      setPeerLocation(null);
+    }
+
+    socket.on("location:share", onShare);
+    socket.on("location:stop", onStop);
+    return () => {
+      socket.off("location:share", onShare);
+      socket.off("location:stop", onStop);
+    };
+  }, [conversationId, user]);
+
+  // Watch + broadcast our own position while `enabled` is true.
+  useEffect(() => {
+    if (!enabled || !conversationId || !user) {
+      return;
+    }
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      setError("Location isn't supported on this device.");
+      return;
+    }
+
+    const socket = getSocket();
+    setError(null);
+
+    watchId.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        const point = { lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() };
+        setMyLocation(point);
+        socket.emit("location:share", { conversationId, userId: user.id, lat: point.lat, lng: point.lng });
+      },
+      (err) => {
+        setError(
+          err.code === err.PERMISSION_DENIED
+            ? "Location access was denied — allow it in your browser to share live location."
+            : "Couldn't get your location right now."
+        );
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+
+    return () => {
+      if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+      watchId.current = null;
+      socket.emit("location:stop", { conversationId, userId: user.id });
+      setMyLocation(null);
+    };
+  }, [enabled, conversationId, user]);
+
+  const distanceKm =
+    myLocation && peerLocation
+      ? haversineKm(myLocation.lat, myLocation.lng, peerLocation.lat, peerLocation.lng)
+      : null;
+
+  return { myLocation, peerLocation, peerSharing, distanceKm, error };
 }
 
 export interface AdminActivityEvent {

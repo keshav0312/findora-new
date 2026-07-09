@@ -16,18 +16,21 @@ import {
   Check,
   CheckCheck,
   MapPin,
+  Radar,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Avatar } from "@/components/ui-bits";
 import { CallModal } from "@/components/call-modal";
+import { LiveTrackingPanel } from "@/components/live-tracking-panel";
 import { LiveMap, MapPin as MapPinType } from "@/components/live-map";
 import { api } from "@/lib/api";
 import { getToken, API_URL } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { usePresence, useConversationSignals } from "@/lib/socket";
 import { useCall } from "@/lib/webrtc";
+import { useToast } from "@/lib/toast-context";
 import { ChatMessage, MatchRecord } from "@/lib/types";
 import { timeAgo } from "@/lib/format";
 
@@ -106,6 +109,7 @@ function LocationBubble({
 
 export default function ChatPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const params = useParams<{ matchId: string }>();
   const [match, setMatch] = useState<MatchRecord | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -114,6 +118,8 @@ export default function ChatPage() {
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [showTrackingMap, setShowTrackingMap] = useState(false);
+  const [showLiveTracking, setShowLiveTracking] = useState(false);
+  const [sharingMyLocation, setSharingMyLocation] = useState(false);
   const [peerTyping, setPeerTyping] = useState(false);
   const [sharingLocation, setSharingLocation] = useState(false);
   const socketRef = useRef<Socket | null>(null);
@@ -233,34 +239,58 @@ export default function ChatPage() {
   const shareLiveLocation = () => {
     if (!otherParty || !user || sharingLocation) return;
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
-      alert("Location sharing isn't supported on this device.");
+      toast({ kind: "error", title: "Location sharing isn't supported on this device." });
       return;
     }
     setSharingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const res = await api.post<{ data: ChatMessage }>("/messages/location", {
-            matchId: params.matchId,
-            recipient: otherParty._id,
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          });
-          setMessages((prev) =>
-            prev.some((m) => m._id === res.data._id) ? prev : [...prev, res.data]
-          );
-        } catch {
-          // no-op — real app would surface a retry affordance
-        } finally {
-          setSharingLocation(false);
-        }
-      },
-      () => {
+
+    const onSuccess = async (pos: GeolocationPosition) => {
+      try {
+        const res = await api.post<{ data: ChatMessage }>("/messages/location", {
+          matchId: params.matchId,
+          recipient: otherParty._id,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+        setMessages((prev) => (prev.some((m) => m._id === res.data._id) ? prev : [...prev, res.data]));
+        toast({ kind: "success", title: "Location sent" });
+      } catch (err) {
+        toast({
+          kind: "error",
+          title: "Couldn't send your location",
+          description: err instanceof Error ? err.message : undefined,
+        });
+      } finally {
         setSharingLocation(false);
-        alert("Couldn't get your location. Please allow location access and try again.");
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+      }
+    };
+
+    const onError = (err: GeolocationPositionError) => {
+      setSharingLocation(false);
+      if (err.code === err.PERMISSION_DENIED) {
+        toast({
+          kind: "error",
+          title: "Location access denied",
+          description: "Allow location access for this site in your browser settings and try again.",
+        });
+      } else if (err.code === err.TIMEOUT) {
+        toast({
+          kind: "error",
+          title: "Location request timed out",
+          description: "Make sure location services are on for your device/browser, then try again.",
+        });
+      } else {
+        toast({ kind: "error", title: "Couldn't get your location", description: err.message });
+      }
+    };
+
+    // A generous timeout + maximumAge: desktop browsers resolve location via
+    // network/Wi-Fi lookup, which can take longer than mobile GPS.
+    navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 60000,
+    });
   };
 
   const onPickImage = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -357,11 +387,23 @@ export default function ChatPage() {
             <button
               onClick={() => setShowTrackingMap((s) => !s)}
               className="flex size-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
-              title="Live location tracking"
+              title="Reported lost/found locations"
             >
               <MapPin className="size-4" />
             </button>
           )}
+          <button
+            onClick={() => setShowLiveTracking((s) => !s)}
+            disabled={!otherParty}
+            className={`flex size-9 shrink-0 items-center justify-center rounded-full border transition disabled:opacity-40 ${
+              showLiveTracking
+                ? "border-brand-indigo bg-brand-indigo text-white"
+                : "border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+            }`}
+            title="Live location tracking"
+          >
+            <Radar className="size-4" />
+          </button>
           <button
             onClick={() => call.startCall("audio")}
             disabled={!otherParty || call.state !== "idle"}
@@ -379,6 +421,20 @@ export default function ChatPage() {
             <Video className="size-4" />
           </button>
         </div>
+
+        {showLiveTracking && (
+          <LiveTrackingPanel
+            conversationId={conversationId}
+            enabled={sharingMyLocation}
+            onToggle={setSharingMyLocation}
+            onClose={() => {
+              setShowLiveTracking(false);
+              setSharingMyLocation(false);
+            }}
+            myName={user?.name}
+            peerName={otherParty?.name}
+          />
+        )}
 
         {showTrackingMap && trackingPins.length > 0 && (
           <div className="relative border-b border-slate-100 dark:border-slate-800">

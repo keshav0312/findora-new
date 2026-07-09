@@ -15,6 +15,7 @@ export interface IMatch extends Document {
   };
   status: "suggested" | "confirmed" | "rejected" | "returned";
   aiExplanation?: string;
+  distanceKm?: number | null;
   createdAt: Date;
 }
 
@@ -38,6 +39,7 @@ const MatchSchema = new Schema<IMatch>(
       default: "suggested",
     },
     aiExplanation: { type: String, default: "" },
+    distanceKm: { type: Number, default: null },
   },
   { timestamps: true }
 );

@@ -1,12 +1,11 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
-  MessagesSquare,
   Bell,
   Search,
   User as UserIcon,
@@ -17,6 +16,7 @@ import {
   Shield,
   Trophy,
   Bookmark,
+  ChevronDown,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { Avatar } from "./ui-bits";
@@ -25,28 +25,18 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { useUserSocket, useLiveNotifications } from "@/lib/socket";
 
-const NAV_GROUPS = [
-  {
-    label: "Workspace",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/my-reports", label: "My Reports", icon: FileText },
-      { href: "/matches", label: "Matches", icon: MapPin },
-      { href: "/search", label: "Search / Explore", icon: Search },
-      { href: "/saved", label: "Saved Items", icon: Bookmark },
-    ],
-  },
-  {
-    label: "Community",
-    items: [
-      { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-      { href: "/notifications", label: "Notifications", icon: Bell },
-    ],
-  },
+// Primary horizontal nav row — kept short on purpose (5 items) so it reads
+// as a clean navbar rather than a crammed one. Profile/Settings/Logout live
+// in the avatar dropdown instead of taking a nav slot each.
+const NAV = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/my-reports", label: "My Reports", icon: FileText },
+  { href: "/matches", label: "Matches", icon: MapPin },
+  { href: "/saved", label: "Saved Items", icon: Bookmark },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
-// Compact set for the mobile bottom tab bar — only the highest-traffic
-// destinations fit comfortably, Flipkart-app style.
+// Compact set for the mobile bottom tab bar — Flipkart-app style.
 const MOBILE_TABS = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/search", label: "Explore", icon: Search },
@@ -60,6 +50,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const [query, setQuery] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Joins this user's private Socket.IO room so the server can push
   // real-time match/notification/chat events straight to this browser tab.
@@ -72,13 +64,21 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }, [loading, user, router]);
 
   useEffect(() => {
-    // Only pop a toast when someone sends a new message — other real-time
-    // events (matches, claims, returns, etc.) still update the app silently.
     if (!liveNotification || liveNotification.type !== "message") return;
     setToast(liveNotification.title);
     const t = setTimeout(() => setToast(null), 5000);
     return () => clearTimeout(t);
   }, [liveNotification]);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  useEffect(() => setMenuOpen(false), [pathname]);
 
   if (loading || !user) {
     return (
@@ -89,97 +89,18 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-white/5 bg-brand-ink px-3 py-5 lg:flex">
-        <div className="flex items-center justify-between px-2">
-          <Logo dark />
-          <span className="flex items-center gap-1 rounded-full bg-white/5 px-2 py-1 text-[10px] font-medium text-emerald-300">
-            <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> Live
-          </span>
-        </div>
-
-        <nav className="mt-7 flex flex-1 flex-col gap-5 overflow-y-auto px-1 scrollbar-thin">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.label}>
-              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                {group.label}
-              </p>
-              <div className="flex flex-col gap-0.5">
-                {group.items.map((item) => {
-                  const active = pathname === item.href || pathname.startsWith(item.href + "/");
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "relative flex items-center gap-3 rounded-lg py-2.5 pl-3.5 pr-3 text-sm font-medium transition-all duration-200",
-                        active ? "bg-white/[0.07] text-white" : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100"
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-brand-indigo transition-all duration-200",
-                          active ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <item.icon className={cn("size-4.5", active && "text-brand-indigo")} />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {(user.role === "admin" || user.role === "police") && (
-            <Link
-              href={user.role === "admin" ? "/admin" : "/police"}
-              className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-3.5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/[0.06] hover:text-white"
-            >
-              <Shield className="size-4.5" />
-              {user.role === "admin" ? "Admin Dashboard" : "Police Dashboard"}
-            </Link>
-          )}
-        </nav>
-
-        <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
-          <Link
-            href="/profile"
-            className="flex items-center gap-2.5 rounded-xl bg-white/[0.04] px-2.5 py-2 transition hover:bg-white/[0.08]"
-          >
-            <Avatar name={user.name} src={user.avatar} size={9} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-white">{user.name}</p>
-              <p className="truncate text-[11px] capitalize text-slate-400">
-                {user.badge && user.badge !== "none" ? `${user.badge} badge` : "New member"} · {user.trustPoints ?? 0} pts
-              </p>
-            </div>
-            <Settings className="size-4 shrink-0 text-slate-500" />
-          </Link>
-          <button
-            onClick={() => {
-              logout();
-              router.push("/");
-            }}
-            className="flex w-full items-center gap-3 rounded-lg px-3.5 py-2 text-sm font-medium text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-200"
-          >
-            <LogOut className="size-4.5" />
-            Log out
-          </button>
-        </div>
-      </aside>
-
-      <div className="flex flex-1 flex-col lg:pl-64">
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur transition-colors duration-300 dark:border-slate-800 dark:bg-slate-900/90 lg:px-8">
-          <div className="lg:hidden">
-            <Logo />
-          </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Top navbar */}
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur transition-colors duration-300 dark:border-slate-800 dark:bg-slate-900/90">
+        {/* Row 1 — brand, search, actions */}
+        <div className="flex items-center gap-3 px-4 py-3 lg:px-8">
+          <Logo />
           <form
             onSubmit={(e) => {
               e.preventDefault();
               router.push(`/search?q=${encodeURIComponent(query)}`);
             }}
-            className="relative hidden max-w-md flex-1 sm:block"
+            className="relative ml-4 hidden max-w-md flex-1 sm:block"
           >
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -189,6 +110,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-sm outline-none transition focus:border-brand-indigo focus:ring-2 focus:ring-brand-indigo/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </form>
+
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle className="hidden sm:flex" />
             <Link
@@ -203,15 +125,73 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             >
               <Bell className="size-4.5" />
             </Link>
-            <Link href="/profile">
-              <Avatar name={user.name} src={user.avatar} size={9} />
-            </Link>
-          </div>
-        </header>
-        <main className="flex-1 px-4 py-6 pb-24 lg:px-8 lg:pb-6">{children}</main>
-      </div>
 
-      {/* Mobile bottom tab bar — Flipkart/e-commerce app style quick nav */}
+            {/* Avatar dropdown — Profile / Settings / Admin / Logout */}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen((o) => !o)}
+                className="flex items-center gap-1.5 rounded-full border border-transparent py-1 pl-1 pr-2 transition hover:border-slate-200 dark:hover:border-slate-700"
+              >
+                <Avatar name={user.name} src={user.avatar} size={8} />
+                <ChevronDown className={cn("size-3.5 text-slate-400 transition-transform", menuOpen && "rotate-180")} />
+              </button>
+
+              {menuOpen && (
+                <div className="animate-in fade-in slide-in-from-top-2 absolute right-0 top-full z-40 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white py-1.5 shadow-lg shadow-slate-900/10 dark:border-slate-800 dark:bg-slate-900">
+                  <div className="border-b border-slate-100 px-3.5 py-2.5 dark:border-slate-800">
+                    <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{user.name}</p>
+                    <p className="truncate text-xs text-slate-400">{user.email}</p>
+                  </div>
+                  <DropdownLink href="/profile" icon={UserIcon} label="My Profile" />
+                  <DropdownLink href="/settings" icon={Settings} label="Settings" />
+                  {(user.role === "admin" || user.role === "police") && (
+                    <DropdownLink
+                      href={user.role === "admin" ? "/admin" : "/police"}
+                      icon={Shield}
+                      label={user.role === "admin" ? "Admin Dashboard" : "Police Dashboard"}
+                    />
+                  )}
+                  <button
+                    onClick={() => {
+                      logout();
+                      router.push("/");
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3.5 py-2 text-sm font-medium text-rose-500 transition hover:bg-rose-50 dark:hover:bg-rose-500/10"
+                  >
+                    <LogOut className="size-4" /> Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2 — primary nav links */}
+        <nav className="scrollbar-thin hidden gap-1 overflow-x-auto border-t border-slate-100 px-4 py-1.5 dark:border-slate-800/60 lg:flex lg:px-8">
+          {NAV.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex shrink-0 items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all duration-200",
+                  active
+                    ? "bg-brand-indigo text-white shadow-sm shadow-brand-indigo/25"
+                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                )}
+              >
+                <item.icon className="size-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </header>
+
+      <main className="px-4 py-6 pb-24 lg:px-8 lg:pb-8">{children}</main>
+
+      {/* Mobile bottom tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-slate-200 bg-white/95 px-2 py-2 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
         {MOBILE_TABS.map((tab) => {
           const active = pathname === tab.href || pathname.startsWith(tab.href + "/");
@@ -251,5 +231,16 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         </div>
       )}
     </div>
+  );
+}
+
+function DropdownLink({ href, icon: Icon, label }: { href: string; icon: typeof UserIcon; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-2.5 px-3.5 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+    >
+      <Icon className="size-4 text-slate-400" /> {label}
+    </Link>
   );
 }

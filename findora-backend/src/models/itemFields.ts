@@ -35,6 +35,7 @@ export const itemFieldDefs = {
   brand: { type: String, default: "" },
   location: { type: String, required: true, trim: true },
   city: { type: String, default: "", trim: true },
+  contactPhone: { type: String, default: "", trim: true },
   coordinates: {
     lat: { type: Number, default: null },
     lng: { type: Number, default: null },

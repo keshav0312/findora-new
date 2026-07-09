@@ -135,6 +135,29 @@ io.on("connection", (socket) => {
   );
 
   // ---------------------------------------------------------------------
+  // Live location tracking: while both parties to a match are viewing the
+  // chat with "Live Location" turned on, their browser GPS position is
+  // relayed (not persisted) to the other party's socket every few seconds,
+  // so each side sees where the other one currently is and how far apart
+  // they are — handy for arranging an item handover in person.
+  // ---------------------------------------------------------------------
+  socket.on(
+    "location:share",
+    (payload: { conversationId: string; userId: string; lat: number; lng: number }) => {
+      if (!payload?.conversationId) return;
+      socket.to(payload.conversationId).emit("location:share", payload);
+    }
+  );
+
+  socket.on(
+    "location:stop",
+    (payload: { conversationId: string; userId: string }) => {
+      if (!payload?.conversationId) return;
+      socket.to(payload.conversationId).emit("location:stop", payload);
+    }
+  );
+
+  // ---------------------------------------------------------------------
   // 1:1 audio/video calling (WebRTC signaling relay only — the actual
   // media stream flows peer-to-peer once both sides exchange SDP/ICE).
   // Every event just gets forwarded to the target user's private room, the

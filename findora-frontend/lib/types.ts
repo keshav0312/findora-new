@@ -30,6 +30,7 @@ export interface Report {
   brand: string;
   location: string;
   city: string;
+  contactPhone?: string;
   coordinates: { lat: number | null; lng: number | null };
   date: string;
   reward: number;
@@ -59,6 +60,7 @@ export interface MatchRecord {
   breakdown: MatchBreakdown;
   status: "suggested" | "confirmed" | "rejected" | "returned";
   aiExplanation?: string;
+  distanceKm?: number | null;
   createdAt: string;
   updatedAt?: string;
 }

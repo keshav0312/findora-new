@@ -5,8 +5,15 @@ import Notification from "../models/Notification.js";
 import Match from "../models/Match.js";
 import User from "../models/User.js";
 import { computeMatch, MATCH_THRESHOLD } from "../utils/matching.js";
+import { haversineKm } from "../utils/geo.js";
 import { explainMatch } from "../services/ai.service.js";
 import { sendMatchNotificationEmail } from "../services/email.service.js";
+import { sendMatchWhatsApp } from "../services/whatsapp.service.js";
+
+// Reports within this distance of each other get treated as a high-urgency
+// proximity match: a WhatsApp alert goes out in addition to the usual
+// email + in-app notification. Override via PROXIMITY_ALERT_KM in .env.
+const PROXIMITY_ALERT_KM = Number(process.env.PROXIMITY_ALERT_KM) || 5;
 
 /**
  * Builds a set of Express handlers (create/list/get/update/delete/mine) for
@@ -46,6 +53,7 @@ export function buildItemController(opts: {
         brand: body.brand,
         location: body.location,
         city: body.city,
+        contactPhone: body.contactPhone || "",
         coordinates: {
           lat: body.lat ? Number(body.lat) : null,
           lng: body.lng ? Number(body.lng) : null,
@@ -85,6 +93,22 @@ export function buildItemController(opts: {
           const foundTitle = kind === "found" ? item.title : candidate.title;
           const lostLocation = kind === "lost" ? item.location : candidate.location;
           const foundLocation = kind === "found" ? item.location : candidate.location;
+          const lostContactPhone = kind === "lost" ? item.contactPhone : candidate.contactPhone;
+          const foundContactPhone = kind === "found" ? item.contactPhone : candidate.contactPhone;
+
+          // Real-world distance between the two reported locations, when
+          // both have map coordinates. Drives the WhatsApp proximity alert
+          // and shows up as "X km away" in the email + UI.
+          let distanceKm: number | null = null;
+          if (item.coordinates?.lat && item.coordinates?.lng && candidate.coordinates?.lat && candidate.coordinates?.lng) {
+            distanceKm = haversineKm(
+              item.coordinates.lat,
+              item.coordinates.lng,
+              candidate.coordinates.lat,
+              candidate.coordinates.lng
+            );
+          }
+          const isNearby = distanceKm !== null && distanceKm <= PROXIMITY_ALERT_KM;
 
           // Ask Groq for a short, human-readable "why this is a match"
           // explanation. Falls back to a template if GROQ_API_KEY isn't set.
@@ -100,7 +124,7 @@ export function buildItemController(opts: {
 
           const match = await Match.findOneAndUpdate(
             { lostItem: lostItemId, foundItem: foundItemId },
-            { score, breakdown, lostOwner, foundOwner, status: "suggested", aiExplanation },
+            { score, breakdown, lostOwner, foundOwner, status: "suggested", aiExplanation, distanceKm },
             { upsert: true, new: true, setDefaultsOnInsert: true }
           );
           createdMatches.push(match);
@@ -108,10 +132,15 @@ export function buildItemController(opts: {
           io?.to("admins").emit("admin:activity", {
             id: `match-${match._id}`,
             kind: "match",
-            message: `${score}% match found: "${lostTitle}" ↔ "${foundTitle}"`,
+            message: `${score}% match found: "${lostTitle}" ↔ "${foundTitle}"${isNearby ? ` (${distanceKm} km apart)` : ""}`,
             city: item.city,
             at: new Date().toISOString(),
           });
+
+          const contactPhoneFor: Record<string, string | undefined> = {
+            [String(lostOwner)]: lostContactPhone,
+            [String(foundOwner)]: foundContactPhone,
+          };
 
           for (const uid of [String(lostOwner), String(foundOwner)]) {
             if (uid === String(req.user!.id)) continue;
@@ -119,16 +148,18 @@ export function buildItemController(opts: {
             const notification = await Notification.create({
               user: uid,
               type: "match",
-              title: "Possible match found",
-              body: `A ${score}% match was found for "${item.title}" — ${aiExplanation}`,
+              title: isNearby ? "Match found nearby! 📍" : "Possible match found",
+              body:
+                `A ${score}% match was found for "${item.title}"` +
+                (isNearby ? ` — only ${distanceKm} km away!` : "") +
+                ` — ${aiExplanation}`,
               link: `/matches`,
             });
 
             // Real-time push over Socket.IO to any connected client for this user.
             io?.to(uid).emit("notification:new", notification);
 
-            // Also email the other party via Brevo so they don't have to be
-            // online to find out about the match.
+            // Email via Brevo so they don't have to be online to find out.
             const matchedUser = await User.findById(uid);
             if (matchedUser) {
               sendMatchNotificationEmail(
@@ -136,8 +167,23 @@ export function buildItemController(opts: {
                 matchedUser.name,
                 item.title,
                 score,
-                aiExplanation
+                aiExplanation,
+                distanceKm
               ).catch(() => {});
+
+              // WhatsApp only fires for close-by matches — this is the
+              // highest-urgency channel, reserved for "the item is
+              // physically nearby right now" alerts.
+              const contactPhone = contactPhoneFor[uid] || matchedUser.phone;
+              if (isNearby && contactPhone) {
+                sendMatchWhatsApp(
+                  contactPhone,
+                  item.title,
+                  score,
+                  distanceKm,
+                  `${process.env.FRONTEND_URL || "http://localhost:3000"}/matches`
+                ).catch(() => {});
+              }
             }
           }
         }

@@ -1,10 +1,44 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { initials, resolveImage } from "@/lib/format";
 import Image from "next/image";
 import { LucideIcon } from "lucide-react";
+
+export function ChartCard({
+  title,
+  icon: Icon,
+  children,
+  className,
+  action,
+}: {
+  title: string;
+  icon?: LucideIcon;
+  children: ReactNode;
+  className?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900",
+        className
+      )}
+    >
+      <div className="mb-4 flex items-center gap-2">
+        {Icon && (
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-indigo/10 text-brand-indigo">
+            <Icon className="size-4" />
+          </span>
+        )}
+        <p className="font-heading text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
+        {action && <div className="ml-auto">{action}</div>}
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -36,7 +70,7 @@ export function StatusPill({ status }: { status: string }) {
 }
 
 /** Animates a number counting up from 0 to `value` on mount / when it changes. */
-function useCountUp(value: number, durationMs = 900) {
+export function useCountUp(value: number, durationMs = 900) {
   const [display, setDisplay] = useState(0);
   const startRef = useRef<number | null>(null);
   const fromRef = useRef(0);
@@ -101,41 +135,6 @@ export function StatCard({
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">{label}</p>
         </div>
       </div>
-    </div>
-  );
-}
-
-/** Card wrapper with an icon header, used across the admin & police dashboards. */
-export function ChartCard({
-  title,
-  icon: Icon,
-  children,
-  className,
-  action,
-}: {
-  title: string;
-  icon?: LucideIcon;
-  children: React.ReactNode;
-  className?: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900",
-        className
-      )}
-    >
-      <div className="mb-4 flex items-center gap-2">
-        {Icon && (
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-indigo/10 text-brand-indigo">
-            <Icon className="size-4" />
-          </span>
-        )}
-        <p className="font-heading text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
-        {action && <div className="ml-auto">{action}</div>}
-      </div>
-      {children}
     </div>
   );
 }
