@@ -17,6 +17,7 @@ function sanitizeUser(user: any) {
     role: user.role,
     city: user.city,
     phone: user.phone,
+    notificationPreferences: user.notificationPreferences,
     isVerified: user.isVerified,
     trustPoints: user.trustPoints,
     badge: user.badge,
@@ -150,15 +151,33 @@ export const me = async (req: AuthRequest, res: Response) => {
 
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, city, phone, avatar } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.user?.id,
-      { $set: { name, city, phone, avatar } },
-      { new: true, runValidators: true }
-    );
+    const user = await User.findById(req.user?.id);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    for (const field of ["name", "city", "phone", "avatar"] as const) {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+        user.set(field, req.body[field]);
+      }
+    }
+
+    const preferences = req.body.notificationPreferences;
+    if (preferences !== undefined) {
+      const allowedKeys = ["matchInApp", "matchEmail", "matchWhatsApp", "matchSms"] as const;
+      if (!preferences || typeof preferences !== "object" || Array.isArray(preferences)) {
+        return res.status(400).json({ success: false, message: "Invalid notification preferences" });
+      }
+
+      for (const key of Object.keys(preferences)) {
+        if (!allowedKeys.includes(key as (typeof allowedKeys)[number]) || typeof preferences[key] !== "boolean") {
+          return res.status(400).json({ success: false, message: "Invalid notification preferences" });
+        }
+        user.set(`notificationPreferences.${key}`, preferences[key]);
+      }
+    }
+
+    await user.save();
     res.status(200).json({ success: true, message: "Profile updated", data: sanitizeUser(user) });
   } catch (err) {
     res.status(500).json({ success: false, message: (err as Error).message });

@@ -8,22 +8,46 @@ import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { useToast } from "@/lib/toast-context";
 import { cn } from "@/lib/utils";
+import { api, ApiError } from "@/lib/api";
 
 export default function SettingsPage() {
-  const { logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const [prefs, setPrefs] = useState({
-    matchAlerts: true,
     messageAlerts: true,
     nearbyAlerts: false,
     emailDigest: true,
   });
+  const deliveryPrefs = {
+    matchInApp: user?.notificationPreferences?.matchInApp ?? true,
+    matchEmail: user?.notificationPreferences?.matchEmail ?? true,
+    matchWhatsApp: user?.notificationPreferences?.matchWhatsApp ?? false,
+    matchSms: user?.notificationPreferences?.matchSms ?? false,
+  };
+  const [savingDeliveryPref, setSavingDeliveryPref] = useState<string | null>(null);
 
   const updatePref = (key: keyof typeof prefs, value: boolean) => {
     setPrefs((p) => ({ ...p, [key]: value }));
     toast({ kind: "success", title: "Preference saved" });
+  };
+
+  const updateDeliveryPref = async (key: keyof typeof deliveryPrefs, value: boolean) => {
+    setSavingDeliveryPref(key);
+    try {
+      await api.patch("/auth/me", { notificationPreferences: { [key]: value } });
+      await refreshUser();
+      toast({ kind: "success", title: "Notification preference saved" });
+    } catch (error) {
+      toast({
+        kind: "error",
+        title: "Could not save notification preference",
+        description: error instanceof ApiError ? error.message : undefined,
+      });
+    } finally {
+      setSavingDeliveryPref(null);
+    }
   };
 
   return (
@@ -69,11 +93,41 @@ export default function SettingsPage() {
           </p>
           <div className="space-y-3">
             <Toggle
-              label="Match alerts"
-              description="Get notified when a possible match is found"
-              checked={prefs.matchAlerts}
-              onChange={(v) => updatePref("matchAlerts", v)}
+              label="In-app match alerts"
+              description="Show a notification in Findora when a possible match is found"
+              checked={deliveryPrefs.matchInApp}
+              disabled={savingDeliveryPref !== null}
+              onChange={(v) => updateDeliveryPref("matchInApp", v)}
             />
+            <Toggle
+              label="Email match alerts"
+              description={`Send a private sign-in link to ${user?.email || "your account email"}; item details stay in Findora`}
+              checked={deliveryPrefs.matchEmail}
+              disabled={savingDeliveryPref !== null}
+              onChange={(v) => updateDeliveryPref("matchEmail", v)}
+            />
+            <Toggle
+              label="WhatsApp match alerts"
+              description="Send a generic alert to your profile phone number"
+              checked={deliveryPrefs.matchWhatsApp}
+              disabled={savingDeliveryPref !== null || !user?.phone}
+              onChange={(v) => updateDeliveryPref("matchWhatsApp", v)}
+            />
+            <Toggle
+              label="SMS match alerts"
+              description="Send a generic alert to your profile phone number"
+              checked={deliveryPrefs.matchSms}
+              disabled={savingDeliveryPref !== null || !user?.phone}
+              onChange={(v) => updateDeliveryPref("matchSms", v)}
+            />
+            {!user?.phone && (
+              <p className="px-1 text-xs text-slate-500 dark:text-slate-400">
+                Add a phone number in your profile to enable WhatsApp or SMS alerts.
+              </p>
+            )}
+            <p className="px-1 text-xs text-slate-500 dark:text-slate-400">
+              Email, WhatsApp, and SMS alerts never include item descriptions, exact locations, or another person&apos;s contact details.
+            </p>
             <Toggle
               label="Message alerts"
               description="Get notified about new chat messages"
@@ -126,11 +180,13 @@ function Toggle({
   description,
   checked,
   onChange,
+  disabled = false,
 }: {
   label: string;
   description: string;
   checked: boolean;
   onChange: (v: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 px-4 py-3 dark:border-slate-800">
@@ -139,8 +195,11 @@ function Toggle({
         <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
       </div>
       <button
+        type="button"
+        disabled={disabled}
+        aria-pressed={checked}
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-300 ${checked ? "bg-brand-indigo" : "bg-slate-200 dark:bg-slate-700"}`}
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${checked ? "bg-brand-indigo" : "bg-slate-200 dark:bg-slate-700"}`}
       >
         <span
           className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-transform duration-300 ${

@@ -6,6 +6,12 @@ export interface User {
   role: "user" | "admin" | "police";
   city?: string;
   phone?: string;
+  notificationPreferences?: {
+    matchInApp: boolean;
+    matchEmail: boolean;
+    matchWhatsApp: boolean;
+    matchSms: boolean;
+  };
   isVerified: boolean;
   trustPoints: number;
   badge: "none" | "bronze" | "silver" | "gold";

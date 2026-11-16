@@ -28,6 +28,7 @@ no cloud account required to get started. Just Node.js and MongoDB.
 | **Bookmarks** | Save any report for later from its card; view them all on `/saved` |
 | **Leaderboard** | `/leaderboard` ranks the community by trust points, with a podium for the top 3 |
 | **Trust & gamification** | Trust points and Bronze/Silver/Gold badges awarded on confirmed returns |
+| **Secure handover** | One-time, 15-minute QR return code; both match participants confirm before a report closes |
 | **Admin & Police portals** | Analytics, user moderation, read-only citizen report review |
 | **Polish** | Page-load animations, hover micro-interactions, skeleton-friendly empty states, a global toast system for form feedback |
 | **~20 pages** | Landing, auth, dashboard, report flow, item detail, chat, search, saved items, leaderboard, notifications, profile, settings, admin, police |
@@ -104,6 +105,8 @@ explanations fall back to a template. To unlock the full experience:
 |---|---|---|
 | `GROQ_API_KEY` | [console.groq.com/keys](https://console.groq.com/keys) — free, no card | AI-written match explanations |
 | `BREVO_API_KEY` | [app.brevo.com](https://app.brevo.com) → Settings → SMTP & API → API Keys — free, 300 emails/day | Verification, password reset, and match-alert emails |
+| WhatsApp Cloud API credentials | [developers.facebook.com](https://developers.facebook.com/) → add the WhatsApp product | Opt-in generic WhatsApp match alerts |
+| Twilio SMS credentials | [twilio.com](https://www.twilio.com/) | Opt-in generic SMS match alerts |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | [console.cloud.google.com/google/maps-apis](https://console.cloud.google.com/google/maps-apis) — enable **Maps JavaScript API**, free tier covers dev use | Live interactive maps + pin-the-spot picker |
 
 ---
@@ -252,7 +255,7 @@ All charts are built with **Recharts** (`findora-frontend/components/charts.tsx`
 | `/dashboard` | User dashboard |
 | `/report`, `/report/lost`, `/report/found` | Report an item (with map picker) |
 | `/my-reports` | Your lost & found reports |
-| `/matches` | AI-suggested matches, confirm/reject/mark returned, tracking stepper |
+| `/matches` | AI-suggested matches, confirm/reject, secure QR handover, tracking stepper |
 | `/items/[type]/[id]` | Full report detail, map, owner card, tracking stepper |
 | `/chat/[matchId]` | Real-time chat with the matched user |
 | `/search` | Browse/filter all open reports |
@@ -275,6 +278,8 @@ JWT_SECRET, JWT_REFRESH_SECRET
 CORS_ORIGIN, FRONTEND_URL
 GROQ_API_KEY, GROQ_MODEL
 BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME
+WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID
+TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER or TWILIO_MESSAGING_SERVICE_SID
 CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET   (optional)
 ```
 
@@ -288,6 +293,17 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 Everything except `MONGODB_URI` and `JWT_SECRET` is optional — the app
 degrades gracefully (console-logged emails, template match explanations,
 placeholder maps) without the rest.
+
+Users must opt in to WhatsApp/SMS match alerts in Settings and add a profile
+phone number. External match alerts contain only a generic notice and a
+sign-in link; item details and other users' contact information stay in the
+authenticated app.
+WhatsApp alerts sent outside the customer-service window require a
+Meta-approved template configured in the backend environment.
+
+For a QR handover scanned from another device during local development, set
+the backend `FRONTEND_URL` and frontend `NEXT_PUBLIC_API_URL` to addresses
+reachable from that device, and allow the frontend origin in `CORS_ORIGIN`.
 
 ---
 

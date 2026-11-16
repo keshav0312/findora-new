@@ -9,6 +9,12 @@ export interface IUser extends Document {
   role: "user" | "admin" | "police";
   city?: string;
   phone?: string;
+  notificationPreferences: {
+    matchInApp: boolean;
+    matchEmail: boolean;
+    matchWhatsApp: boolean;
+    matchSms: boolean;
+  };
   isVerified: boolean;
   trustPoints: number;
   badge: "none" | "bronze" | "silver" | "gold";
@@ -41,6 +47,12 @@ const UserSchema = new Schema<IUser>(
     },
     city: { type: String, default: "" },
     phone: { type: String, default: "" },
+    notificationPreferences: {
+      matchInApp: { type: Boolean, default: true },
+      matchEmail: { type: Boolean, default: true },
+      matchWhatsApp: { type: Boolean, default: false },
+      matchSms: { type: Boolean, default: false },
+    },
     isVerified: { type: Boolean, default: false },
     trustPoints: { type: Number, default: 0 },
     badge: {

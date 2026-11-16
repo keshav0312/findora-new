@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Sparkles, MessageCircle, CheckCircle2, XCircle, Bot } from "lucide-react";
+import { Sparkles, MessageCircle, CheckCircle2, XCircle, Bot, QrCode, ShieldCheck } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { EmptyState, Avatar } from "@/components/ui-bits";
 import { TrackingStepper, DEFAULT_TRACKING_STEPS } from "@/components/tracking-stepper";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
-import { MatchRecord } from "@/lib/types";
+import { ItemOwner, MatchRecord, Report } from "@/lib/types";
 import { resolveImage, formatDate } from "@/lib/format";
 import Image from "next/image";
 
@@ -30,6 +30,15 @@ function activeIndexFor(status: MatchRecord["status"]) {
 export default function MatchesPage() {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [handover, setHandover] = useState<{
+    matchId: string;
+    token: string;
+    qrCode: string;
+    expiresAt: string;
+    selfConfirmed?: boolean;
+  } | null>(null);
+  const [incomingHandover, setIncomingHandover] = useState<{ matchId: string; token: string } | null>(null);
+  const [handoverLoading, setHandoverLoading] = useState(false);
   const { toast } = useToast();
 
   const load = () => api.get<{ data: MatchRecord[] }>("/matches").then((r) => setMatches(r.data)).finally(() => setLoading(false));
@@ -38,17 +47,92 @@ export default function MatchesPage() {
     load();
   }, []);
 
-  const respond = async (id: string, status: "confirmed" | "rejected" | "returned") => {
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(window.location.hash.slice(1));
+      const challenge = params.get("handover");
+      const separator = challenge?.indexOf(".") ?? -1;
+      if (challenge && separator > 0) {
+        setIncomingHandover({
+          matchId: challenge.slice(0, separator),
+          token: challenge.slice(separator + 1),
+        });
+        window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const respond = async (id: string, status: "confirmed" | "rejected") => {
     try {
       await api.patch(`/matches/${id}`, { status });
       toast({
         kind: "success",
-        title: status === "returned" ? "Marked as returned 🎉" : status === "confirmed" ? "Match confirmed" : "Match dismissed",
-        description: status === "returned" ? "Trust points awarded to both parties." : undefined,
+        title: status === "confirmed" ? "Match confirmed" : "Match dismissed",
       });
       load();
     } catch (err) {
       toast({ kind: "error", title: "Could not update match", description: err instanceof ApiError ? err.message : undefined });
+    }
+  };
+
+  const startHandover = async (matchId: string) => {
+    setHandoverLoading(true);
+    try {
+      const response = await api.post<{
+        data: { token: string; qrCode: string; expiresAt: string };
+      }>(`/matches/${matchId}/handover`);
+      setHandover({ matchId, ...response.data });
+      toast({
+        kind: "success",
+        title: "Secure handover QR created",
+        description: "It expires in 15 minutes. Both people must confirm the return.",
+      });
+    } catch (error) {
+      toast({
+        kind: "error",
+        title: "Could not create handover QR",
+        description: error instanceof ApiError ? error.message : undefined,
+      });
+    } finally {
+      setHandoverLoading(false);
+    }
+  };
+
+  const confirmHandover = async (challenge: { matchId: string; token: string }) => {
+    setHandoverLoading(true);
+    try {
+      const response = await api.post<{ data: { returned: boolean } }>(
+        `/matches/${challenge.matchId}/handover/confirm`,
+        { token: challenge.token }
+      );
+      if (response.data.returned) {
+        setHandover(null);
+        toast({
+          kind: "success",
+          title: "Return confirmed",
+          description: "Both people confirmed the handover. Trust points were awarded.",
+        });
+        load();
+      } else {
+        setHandover((current) =>
+          current?.matchId === challenge.matchId ? { ...current, selfConfirmed: true } : current
+        );
+        toast({
+          kind: "success",
+          title: "Your confirmation was saved",
+          description: "The other person must also confirm before the match is closed.",
+        });
+      }
+      setIncomingHandover(null);
+    } catch (error) {
+      toast({
+        kind: "error",
+        title: "Could not confirm handover",
+        description: error instanceof ApiError ? error.message : undefined,
+      });
+    } finally {
+      setHandoverLoading(false);
     }
   };
 
@@ -58,6 +142,27 @@ export default function MatchesPage() {
       <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
         Ranked by AI similarity score across category, location, description, date and photos.
       </p>
+
+      {incomingHandover && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 size-5 shrink-0 text-brand-green" />
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-slate-100">Confirm a secure handover</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                Only confirm if the item was physically handed over. Both match participants must confirm.
+              </p>
+            </div>
+          </div>
+          <button
+            disabled={handoverLoading}
+            onClick={() => confirmHandover(incomingHandover)}
+            className="rounded-full bg-brand-green px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            Confirm handover
+          </button>
+        </div>
+      )}
 
       {!loading && matches.length === 0 && (
         <EmptyState
@@ -156,14 +261,53 @@ export default function MatchesPage() {
                 )}
                 {m.status === "confirmed" && (
                   <button
-                    onClick={() => respond(m._id, "returned")}
-                    className="flex items-center gap-1.5 rounded-full bg-brand-green px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 hover:shadow-md"
+                    disabled={handoverLoading}
+                    onClick={() => startHandover(m._id)}
+                    className="flex items-center gap-1.5 rounded-full bg-brand-green px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 hover:shadow-md disabled:opacity-60"
                   >
-                    <CheckCircle2 className="size-3.5" /> Mark returned
+                    <QrCode className="size-3.5" /> Create secure return QR
                   </button>
                 )}
               </div>
             </div>
+
+            {handover?.matchId === m._id && (
+              <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+                <Image
+                  src={handover.qrCode}
+                  alt="One-time handover QR code"
+                  width={180}
+                  height={180}
+                  unoptimized
+                  className="rounded-lg bg-white p-2"
+                />
+                <div className="min-w-52 flex-1">
+                  <p className="flex items-center gap-2 font-semibold text-slate-900 dark:text-slate-100">
+                    <ShieldCheck className="size-4 text-brand-green" /> One-time handover
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                    Let only the other match participant scan this QR. It expires at{" "}
+                    {new Date(handover.expiresAt).toLocaleTimeString()}.
+                  </p>
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Do not confirm until the item has actually been handed over.
+                  </p>
+                  {handover.selfConfirmed ? (
+                    <p className="mt-3 text-sm font-medium text-brand-green">
+                      Your confirmation is recorded; waiting for the other person.
+                    </p>
+                  ) : (
+                    <button
+                      disabled={handoverLoading}
+                      onClick={() => confirmHandover(handover)}
+                      className="mt-3 rounded-full bg-brand-green px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
+                    >
+                      I confirm the handover
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -171,7 +315,7 @@ export default function MatchesPage() {
   );
 }
 
-function MatchItemPreview({ label, report, owner }: { label: string; report: any; owner: any }) {
+function MatchItemPreview({ label, report, owner }: { label: string; report: Report; owner: ItemOwner }) {
   const photo = resolveImage(report?.photos?.[0]);
   return (
     <div className="flex gap-3 rounded-xl border border-slate-100 p-3 dark:border-slate-800">

@@ -22,7 +22,7 @@ export function ChartCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900",
+        "rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50 p-5 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(15,23,42,0.09)] dark:border-slate-700/80 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/80",
         className
       )}
     >
@@ -118,7 +118,7 @@ export function StatCard({
   const displayValue = typeof value === "number" || /^\d+$/.test(String(value)) ? animated : value;
 
   return (
-    <div className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+    <div className="group rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50 p-4 shadow-[0_8px_24px_rgba(15,23,42,0.05)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(15,23,42,0.09)] dark:border-slate-700/80 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/80">
       <div className="flex items-center gap-3">
         <span
           className={cn(
@@ -197,7 +197,7 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="animate-in fade-in zoom-in-95 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-14 text-center dark:border-slate-700 dark:bg-slate-900/40">
+    <div className="animate-in fade-in zoom-in-95 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300/80 bg-gradient-to-br from-white/90 via-white/75 to-indigo-50/70 px-6 py-14 text-center dark:border-slate-700 dark:from-slate-900/90 dark:via-slate-900/75 dark:to-slate-800/70">
       <span className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
         <Icon className="size-7" />
       </span>

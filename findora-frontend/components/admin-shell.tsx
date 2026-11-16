@@ -67,15 +67,15 @@ export function AdminShell({
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="app-backdrop flex min-h-screen items-center justify-center">
         <div className="size-8 animate-spin rounded-full border-2 border-brand-indigo border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur transition-colors duration-300 dark:border-slate-800 dark:bg-slate-900/90">
+    <div className="app-backdrop min-h-screen">
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 shadow-sm shadow-slate-900/5 backdrop-blur transition-colors duration-300 dark:border-slate-800/80 dark:bg-slate-900/85">
         <div className="flex items-center gap-3 px-4 py-3 lg:px-8">
           <Logo />
           <span className="hidden rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400 sm:inline-block">

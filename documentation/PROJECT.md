@@ -29,17 +29,21 @@ scattered WhatsApp groups, Facebook posts, and printed posters.
 4. Findora immediately cross-matches the new report against open reports in
    the opposite collection (see `findora-backend/src/utils/matching.ts`)
 5. If a match scores above the threshold, both parties are notified
-6. Users chat in-app, verify ownership via the private questions, and agree on
+6. Users chat in-app, verify ownership via the private questions, and arrange
    a handover
-7. Either party marks the match as returned — both earn trust points
+7. Both participants confirm the return through a short-lived QR handover;
+   only then is the match closed and trust awarded
 
 ## Trust & safety model
 
 - Verification question **answers** are only ever visible to the report
   owner; everyone else only sees the question text (enforced server-side in
   `itemFactory.ts`'s `getOne` handler, not just hidden in the UI)
-- Trust points accrue on confirmed returns (10 pts to the lost-item owner, 15
-  to the finder) and roll up into bronze/silver/gold badges
+- Match views redact another user's contact phone and verification answers.
+- External match alerts contain a generic sign-in link; item details and
+  personal contact information stay in the authenticated app.
+- Trust points accrue once after both participants confirm a return (10 pts
+  to the lost-item owner, 15 to the finder) and roll up into bronze/silver/gold badges
 - Admins can restrict (mark unverified) misbehaving accounts; police accounts
   get read-only visibility into citizen reports without ever seeing private
   verification answers

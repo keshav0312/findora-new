@@ -69,6 +69,23 @@ statically at `http://localhost:5000/uploads/<file>`. Swap
 production use — the `.env.example` already has placeholders for Cloudinary
 credentials.
 
+## Match alerts and secure handover
+
+Email match alerts use Brevo. WhatsApp alerts use Meta's WhatsApp Cloud API,
+and SMS alerts use Twilio. Configure the relevant credentials in `.env`.
+Users opt in to WhatsApp/SMS in Settings and must add a phone number to their
+profile. External alerts contain only a generic notice and a sign-in link;
+item details and other users' contact information stay in Findora.
+For WhatsApp delivery outside the customer-service window, configure an
+approved match template with one body placeholder for the link.
+
+After both users confirm a match, either can create a QR handover link from
+the Matches page. The QR expires after 15 minutes, requires both match
+participants to confirm, and only then closes the match and awards trust
+points. When scanning from another device during local development, set
+`FRONTEND_URL` to an address that device can reach and configure the frontend
+API URL/CORS origin for that same address.
+
 ## What's stubbed / left for you
 
 - Email delivery for `forgot-password` and email verification (currently a

@@ -21,9 +21,7 @@ import {
   PolarAngleAxis,
 } from "recharts";
 
-// Matches the "Color Theme" swatches from the product design: indigo, blue,
-// green, orange, red, slate.
-const PALETTE = ["#4338ca", "#2563eb", "#16a34a", "#f97316", "#dc2626", "#0f172a", "#7c3aed", "#0891b2"];
+const PALETTE = ["#294760", "#547b96", "#6f9f93", "#c79a5b", "#9d7775", "#71899a", "#3d6c83", "#a9bdc6"];
 
 export interface DonutDatum {
   name: string;
@@ -76,11 +74,11 @@ export interface TrendDatum {
 }
 
 /** "Reports Overview" style trend line. */
-export function TrendChart({ data, height = 200, color = "#4338ca" }: { data: TrendDatum[]; height?: number; color?: string }) {
+export function TrendChart({ data, height = 200, color = "#315b76" }: { data: TrendDatum[]; height?: number; color?: string }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e8eef2" />
         <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
         <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
         <Tooltip />
@@ -101,13 +99,13 @@ export function LostFoundBarChart({ data, height = 220 }: { data: BarDatum[]; he
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e8eef2" />
         <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
         <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
         <Tooltip />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="lost" fill="#dc2626" radius={[4, 4, 0, 0]} name="Lost" />
-        <Bar dataKey="found" fill="#16a34a" radius={[4, 4, 0, 0]} name="Found" />
+        <Bar dataKey="found" fill="#6f9f93" radius={[4, 4, 0, 0]} name="Found" />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -184,7 +182,7 @@ export function PieBreakdown({
 export function AreaTrendChart({
   data,
   height = 220,
-  color = "#4338ca",
+  color = "#315b76",
 }: {
   data: TrendDatum[];
   height?: number;
@@ -199,7 +197,7 @@ export function AreaTrendChart({
             <stop offset="100%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e8eef2" />
         <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
         <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} allowDecimals={false} />
         <Tooltip />
@@ -213,7 +211,7 @@ export function AreaTrendChart({
 export function GaugeChart({
   value,
   height = 200,
-  color = "#16a34a",
+  color = "#6f9f93",
   label,
 }: {
   value: number;

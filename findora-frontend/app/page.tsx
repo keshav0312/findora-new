@@ -21,6 +21,7 @@ import {
 import { Logo } from "@/components/logo";
 import { MapPreview } from "@/components/map-preview";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useAuth } from "@/lib/auth-context";
 
 const STEPS = [
   { icon: FileText, title: "Report", desc: "Post what you lost or found in under a minute.", color: "indigo" },
@@ -128,8 +129,24 @@ function HeroImage() {
 }
 
 export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const dashboardHref =
+    user?.role === "admin" ? "/admin" : user?.role === "police" ? "/police" : "/dashboard";
+  const footerColumns = FOOTER_COLUMNS.map((column) =>
+    column.title === "Account" && user
+      ? {
+          ...column,
+          links: [
+            { label: "Dashboard", href: dashboardHref },
+            { label: "My profile", href: "/profile" },
+            { label: "Settings", href: "/settings" },
+          ],
+        }
+      : column
+  );
+
   return (
-    <div className="flex-1 overflow-hidden bg-white dark:bg-slate-950">
+    <div className="flex-1 overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/80 backdrop-blur dark:border-slate-900 dark:bg-slate-950/80">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -149,15 +166,28 @@ export default function LandingPage() {
             >
               <Building2 className="size-4" /> For Organizations
             </Link>
-            <Link href="/login" className="hidden text-sm font-semibold text-slate-700 transition hover:text-brand-indigo dark:text-slate-200 sm:block">
-              Log in
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-full bg-brand-indigo px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-indigo/30 transition hover:-translate-y-0.5 hover:bg-brand-indigo-dark hover:shadow-md"
-            >
-              Get started
-            </Link>
+            {loading ? (
+              <span className="h-9 w-24 animate-pulse rounded-full bg-slate-100 dark:bg-slate-800" aria-label="Loading account" />
+            ) : user ? (
+              <Link
+                href={dashboardHref}
+                className="rounded-full bg-brand-indigo px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-indigo/30 transition hover:-translate-y-0.5 hover:bg-brand-indigo-dark hover:shadow-md"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="hidden text-sm font-semibold text-slate-700 transition hover:text-brand-indigo dark:text-slate-200 sm:block">
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  className="rounded-full bg-brand-indigo px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-indigo/30 transition hover:-translate-y-0.5 hover:bg-brand-indigo-dark hover:shadow-md"
+                >
+                  Get started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -199,18 +229,18 @@ export default function LandingPage() {
             </div>
             <div className="mt-10 flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
               <div>
-                <p className="font-heading text-xl font-bold text-slate-900 dark:text-slate-100">2,543+</p>
-                <p>Community members</p>
+                <p className="font-heading text-xl font-bold text-slate-900 dark:text-slate-100">One</p>
+                <p>clear report</p>
               </div>
               <div className="h-8 w-px bg-slate-200 dark:bg-slate-800" />
               <div>
-                <p className="font-heading text-xl font-bold text-slate-900 dark:text-slate-100">1,132</p>
-                <p>Items reunited</p>
+                <p className="font-heading text-xl font-bold text-slate-900 dark:text-slate-100">Relevant</p>
+                <p>possible matches</p>
               </div>
               <div className="h-8 w-px bg-slate-200 dark:bg-slate-800" />
               <div>
-                <p className="font-heading text-xl font-bold text-slate-900 dark:text-slate-100">92%</p>
-                <p>AI match accuracy</p>
+                <p className="font-heading text-xl font-bold text-slate-900 dark:text-slate-100">Safer</p>
+                <p>verified handoffs</p>
               </div>
             </div>
           </div>
@@ -383,7 +413,7 @@ export default function LandingPage() {
 
           <div className="mt-6 flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white/60 p-5 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
             <Trophy className="size-5 shrink-0 text-amber-500" />
-            Every return earns trust points and climbs the community leaderboard — the more you help, the more you're recognized.
+            Every return earns trust points and climbs the community leaderboard — the more you help, the more you&apos;re recognized.
           </div>
         </div>
       </section>
@@ -405,10 +435,10 @@ export default function LandingPage() {
           <p className="relative mt-3 text-sm text-slate-300">Found something? Help return it to its owner.</p>
           <div className="relative mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/register"
+              href={user ? dashboardHref : "/register"}
               className="inline-flex items-center gap-1.5 rounded-full bg-white px-7 py-3 text-sm font-semibold text-brand-indigo shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
             >
-              Get started <ArrowRight className="size-4" />
+              {user ? "Open dashboard" : "Get started"} <ArrowRight className="size-4" />
             </Link>
             <Link
               href="/search"
@@ -443,7 +473,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {FOOTER_COLUMNS.map((col) => (
+            {footerColumns.map((col) => (
               <div key={col.title}>
                 <p className="font-heading text-sm font-semibold text-white">{col.title}</p>
                 <ul className="mt-4 space-y-2.5">

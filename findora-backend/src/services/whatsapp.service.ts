@@ -40,19 +40,39 @@ export function normalizePhone(raw: string): string | null {
   return digits;
 }
 
-async function sendWhatsAppText(toPhoneRaw: string, body: string): Promise<boolean> {
+async function sendWhatsAppMessage(toPhoneRaw: string, body: string, matchUrl: string): Promise<boolean> {
   const token = process.env.WHATSAPP_TOKEN;
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const to = normalizePhone(toPhoneRaw);
 
   if (!token || !phoneNumberId) {
-    console.log(`[whatsapp:disabled] Would message ${toPhoneRaw}: ${body}`);
+    console.log("[whatsapp:disabled] Match alert not sent; WhatsApp credentials are not configured.");
     return false;
   }
   if (!to) {
-    console.log(`[whatsapp:skip] No valid phone number to message ("${toPhoneRaw}")`);
+    console.log("[whatsapp:skip] Match alert not sent; the profile phone number is invalid.");
     return false;
   }
+
+  const templateName = process.env.WHATSAPP_MATCH_TEMPLATE_NAME;
+  const message = templateName
+    ? {
+        type: "template",
+        template: {
+          name: templateName,
+          language: { code: process.env.WHATSAPP_MATCH_TEMPLATE_LANGUAGE || "en_US" },
+          components: [
+            {
+              type: "body",
+              parameters: [{ type: "text", text: matchUrl }],
+            },
+          ],
+        },
+      }
+    : {
+        type: "text",
+        text: { body, preview_url: false },
+      };
 
   try {
     const res = await fetch(graphUrl(), {
@@ -64,14 +84,12 @@ async function sendWhatsAppText(toPhoneRaw: string, body: string): Promise<boole
       body: JSON.stringify({
         messaging_product: "whatsapp",
         to,
-        type: "text",
-        text: { body, preview_url: true },
+        ...message,
       }),
     });
 
     if (!res.ok) {
-      const errBody = await res.text();
-      console.error(`[whatsapp:error] Graph API responded ${res.status}: ${errBody}`);
+      console.error(`[whatsapp:error] Graph API responded with status ${res.status}.`);
       return false;
     }
     return true;
@@ -82,24 +100,15 @@ async function sendWhatsAppText(toPhoneRaw: string, body: string): Promise<boole
 }
 
 /**
- * Sent when a new report matches an existing one *and* the two locations
- * are within the proximity threshold (see PROXIMITY_ALERT_KM in
- * itemFactory.ts) — the highest-urgency case, since the items are
- * physically close together right now.
+ * The external message deliberately contains no item title or personal details.
  */
 export async function sendMatchWhatsApp(
   toPhone: string,
-  itemTitle: string,
-  score: number,
-  distanceKm: number | null,
   matchUrl: string
 ) {
-  const distanceLine =
-    distanceKm !== null ? `📍 Only *${distanceKm} km* away from where it was lost/found!\n` : "";
   const body =
     `🎉 *Findora Match Alert*\n\n` +
-    `We found a *${score}% match* for "*${itemTitle}*".\n` +
-    distanceLine +
-    `\nOpen Findora to view details and chat: ${matchUrl}`;
-  return sendWhatsAppText(toPhone, body);
+    "A possible match was found for one of your reports.\n\n" +
+    `Sign in to Findora to review it securely: ${matchUrl}`;
+  return sendWhatsAppMessage(toPhone, body, matchUrl);
 }

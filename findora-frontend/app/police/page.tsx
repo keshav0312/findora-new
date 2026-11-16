@@ -49,7 +49,7 @@ export default function PoliceDashboardPage() {
   return (
     <AdminShell variant="police">
       {/* Gradient header banner */}
-      <div className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-slate-800 via-brand-ink to-slate-900 p-6 text-white shadow-lg">
+      <div className="mb-6 overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-brand-ink to-brand-indigo p-6 text-white shadow-xl shadow-slate-900/15">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="flex size-11 items-center justify-center rounded-xl bg-white/10 backdrop-blur">
@@ -84,7 +84,7 @@ export default function PoliceDashboardPage() {
               { name: "Lost", value: lostCount },
               { name: "Found", value: foundCount },
             ]}
-            colors={["#dc2626", "#16a34a"]}
+            colors={["#c87570", "#6f9f93"]}
             height={220}
           />
         </ChartCard>
@@ -95,13 +95,13 @@ export default function PoliceDashboardPage() {
               { name: "Resolved", value: resolved },
               { name: "Pending", value: pending },
             ]}
-            colors={["#16a34a", "#f97316"]}
+            colors={["#6f9f93", "#c79a5b"]}
             height={220}
           />
         </ChartCard>
 
         <ChartCard title="Recovery rate" icon={TrendingUp}>
-          <GaugeChart value={analytics?.recoveryRate ?? 0} height={220} label="items returned" />
+          <GaugeChart value={analytics?.recoveryRate ?? 0} height={220} color="#6f9f93" label="items returned" />
         </ChartCard>
       </div>
 
@@ -111,7 +111,7 @@ export default function PoliceDashboardPage() {
           <LiveMap className="h-64 w-full" pins={pins} />
         </ChartCard>
         <ChartCard title="Reports (last 6 months)" icon={BarChart3}>
-          <AreaTrendChart data={analytics?.trend ?? []} height={220} color="#2563eb" />
+          <AreaTrendChart data={analytics?.trend ?? []} height={220} color="#547b96" />
         </ChartCard>
       </div>
 

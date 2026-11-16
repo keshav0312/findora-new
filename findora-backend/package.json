@@ -28,6 +28,7 @@
     "mongoose": "^9.7.3",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.8.3",
     "validator": "^13.15.35"
   },
@@ -42,6 +43,7 @@
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.2.0",
     "@types/node": "^26.1.0",
+    "@types/qrcode": "^1.5.6",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.23.0",
     "typescript": "^6.0.3"

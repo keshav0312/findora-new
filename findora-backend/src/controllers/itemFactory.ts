@@ -9,6 +9,7 @@ import { haversineKm } from "../utils/geo.js";
 import { explainMatch } from "../services/ai.service.js";
 import { sendMatchNotificationEmail } from "../services/email.service.js";
 import { sendMatchWhatsApp } from "../services/whatsapp.service.js";
+import { sendMatchSms } from "../services/sms.service.js";
 
 // Reports within this distance of each other get treated as a high-urgency
 // proximity match: a WhatsApp alert goes out in addition to the usual
@@ -93,9 +94,6 @@ export function buildItemController(opts: {
           const foundTitle = kind === "found" ? item.title : candidate.title;
           const lostLocation = kind === "lost" ? item.location : candidate.location;
           const foundLocation = kind === "found" ? item.location : candidate.location;
-          const lostContactPhone = kind === "lost" ? item.contactPhone : candidate.contactPhone;
-          const foundContactPhone = kind === "found" ? item.contactPhone : candidate.contactPhone;
-
           // Real-world distance between the two reported locations, when
           // both have map coordinates. Drives the WhatsApp proximity alert
           // and shows up as "X km away" in the email + UI.
@@ -137,53 +135,42 @@ export function buildItemController(opts: {
             at: new Date().toISOString(),
           });
 
-          const contactPhoneFor: Record<string, string | undefined> = {
-            [String(lostOwner)]: lostContactPhone,
-            [String(foundOwner)]: foundContactPhone,
-          };
-
           for (const uid of [String(lostOwner), String(foundOwner)]) {
-            if (uid === String(req.user!.id)) continue;
-
-            const notification = await Notification.create({
-              user: uid,
-              type: "match",
-              title: isNearby ? "Match found nearby! 📍" : "Possible match found",
-              body:
-                `A ${score}% match was found for "${item.title}"` +
-                (isNearby ? ` — only ${distanceKm} km away!` : "") +
-                ` — ${aiExplanation}`,
-              link: `/matches`,
-            });
-
-            // Real-time push over Socket.IO to any connected client for this user.
-            io?.to(uid).emit("notification:new", notification);
-
-            // Email via Brevo so they don't have to be online to find out.
             const matchedUser = await User.findById(uid);
-            if (matchedUser) {
-              sendMatchNotificationEmail(
-                matchedUser.email,
-                matchedUser.name,
-                item.title,
-                score,
-                aiExplanation,
-                distanceKm
-              ).catch(() => {});
+            if (!matchedUser) continue;
 
-              // WhatsApp only fires for close-by matches — this is the
-              // highest-urgency channel, reserved for "the item is
-              // physically nearby right now" alerts.
-              const contactPhone = contactPhoneFor[uid] || matchedUser.phone;
-              if (isNearby && contactPhone) {
-                sendMatchWhatsApp(
-                  contactPhone,
-                  item.title,
-                  score,
-                  distanceKm,
-                  `${process.env.FRONTEND_URL || "http://localhost:3000"}/matches`
-                ).catch(() => {});
-              }
+            const preferences = matchedUser.notificationPreferences;
+            if (preferences?.matchInApp !== false) {
+              const notification = await Notification.create({
+                user: uid,
+                type: "match",
+                title: isNearby ? "Match found nearby! 📍" : "Possible match found",
+                body:
+                  `A ${score}% match was found for "${item.title}"` +
+                  (isNearby ? ` — only ${distanceKm} km away!` : "") +
+                  ` — ${aiExplanation}`,
+                link: "/matches",
+              });
+              io?.to(uid).emit("notification:new", notification);
+            }
+
+            const matchUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/matches`;
+            if (preferences?.matchEmail !== false) {
+              void sendMatchNotificationEmail(matchedUser.email, matchedUser.name).catch((error) => {
+                console.error("[match-alert] Email delivery failed:", (error as Error).message);
+              });
+            }
+
+            if (matchedUser.phone && preferences?.matchWhatsApp === true) {
+              void sendMatchWhatsApp(matchedUser.phone, matchUrl).catch((error) => {
+                console.error("[match-alert] WhatsApp delivery failed:", (error as Error).message);
+              });
+            }
+
+            if (matchedUser.phone && preferences?.matchSms === true) {
+              void sendMatchSms(matchedUser.phone, matchUrl).catch((error) => {
+                console.error("[match-alert] SMS delivery failed:", (error as Error).message);
+              });
             }
           }
         }

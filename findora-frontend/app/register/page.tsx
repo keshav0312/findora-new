@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, User, MapPinned, Loader2 } from "lucide-react";
+import { Mail, Lock, User, MapPinned, Loader2, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/lib/auth-context";
@@ -22,7 +22,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(form.name, form.email, form.password, form.city);
-      router.push("/dashboard");
+      router.push("/");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -111,7 +111,7 @@ function Field({
   label,
   children,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   children: React.ReactNode;
 }) {

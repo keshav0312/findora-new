@@ -37,7 +37,7 @@ export default function RootLayout({
         {/* Runs before hydration so the correct theme applies with zero flash. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="flex min-h-full flex-col bg-slate-50 font-sans text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
+      <body className="app-backdrop flex min-h-full flex-col font-sans text-slate-900 transition-colors duration-300 dark:text-slate-100">
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>{children}</AuthProvider>

@@ -24,7 +24,7 @@ async function sendEmail({ to, subject, html }: SendEmailArgs): Promise<boolean>
   const apiKey = process.env.BREVO_API_KEY;
 
   if (!apiKey) {
-    console.log(`[email:disabled] Would send "${subject}" to ${to.email}`);
+    console.log(`[email:disabled] Would send "${subject}"; provider credentials are not configured.`);
     return false;
   }
 
@@ -45,8 +45,7 @@ async function sendEmail({ to, subject, html }: SendEmailArgs): Promise<boolean>
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      console.error(`[email:error] Brevo responded ${res.status}: ${body}`);
+      console.error(`[email:error] Brevo responded with status ${res.status}.`);
       return false;
     }
 
@@ -110,39 +109,28 @@ export async function sendPasswordResetEmail(to: string, name: string, token: st
 
 export async function sendMatchNotificationEmail(
   to: string,
-  name: string,
-  itemTitle: string,
-  score: number,
-  aiExplanation?: string,
-  distanceKm?: number | null
+  name: string
 ) {
   const url = `${FRONTEND_URL}/matches`;
-  const proximityLine =
-    distanceKm !== undefined && distanceKm !== null
-      ? `<br/>📍 <b>${distanceKm} km</b> away from where it was lost/found — very close by!`
-      : "";
   return sendEmail({
     to: { email: to, name },
-    subject: `We found a possible match for "${itemTitle}" (${score}%)`,
+    subject: "A possible match is waiting in Findora",
     html: layout(
-      "We found a possible match! 🎉",
-      `Our AI matching engine found a <b>${score}% match</b> for <b>${itemTitle}</b>.` +
-        proximityLine +
-        (aiExplanation ? `<br/><br/><i>${aiExplanation}</i>` : "") +
-        "<br/><br/>Open Findora to review the details and start a chat with the other party.",
+      "A possible match was found",
+      "Sign in to Findora to review your match securely. Item details and other users' personal information are not included in this email.",
       "View match",
       url
     ),
   });
 }
 
-export async function sendItemReturnedEmail(to: string, name: string, itemTitle: string) {
+export async function sendItemReturnedEmail(to: string, name: string) {
   return sendEmail({
     to: { email: to, name },
-    subject: `"${itemTitle}" was marked as returned`,
+    subject: "Your Findora handover is complete",
     html: layout(
       "Case closed 🎉",
-      `Great news — <b>${itemTitle}</b> has been marked as returned and closed. Thank you for using Findora to help reunite people with their belongings.`
+      "Both participants confirmed the handover. Thank you for using Findora to help reunite people with their belongings."
     ),
   });
 }

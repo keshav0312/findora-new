@@ -16,7 +16,16 @@ Responses follow `{ success: boolean, message?, data?, ... }`.
 | POST | `/forgot-password` | — | `{ email }` | Always returns success (doesn't leak registered emails); emails a reset link if the account exists |
 | POST | `/reset-password` | — | `{ token, password }` | Sets a new password |
 | GET | `/me` | ✔ | — | Current user profile |
-| PATCH | `/me` | ✔ | `{ name?, city?, phone?, avatar? }` | Update profile |
+| PATCH | `/me` | ✔ | `{ name?, city?, phone?, avatar?, notificationPreferences? }` | Update profile and match-alert channel preferences |
+
+`notificationPreferences` accepts any subset of `matchInApp`, `matchEmail`,
+`matchWhatsApp`, and `matchSms` boolean values. Email alerts default on;
+WhatsApp and SMS default off and require the user to opt in and add a profile
+phone number.
+
+For phone scanning during local development, the QR link's `FRONTEND_URL`
+must be reachable from the scanning device (for example, the development
+computer's LAN address rather than `localhost`).
 
 ## Lost / Found reports — `/lost`, `/found`
 
@@ -41,13 +50,22 @@ verificationQuestions (JSON string, lost only)`.
 | Method | Path | Auth | Notes |
 | --- | --- | --- | --- |
 | GET | `/` | ✔ | All matches where the user owns either side, sorted by score |
-| PATCH | `/:id` | ✔ (a party to the match) | `{ status: "confirmed" \| "rejected" \| "returned" }`; `returned` awards trust points and emails both parties |
+| PATCH | `/:id` | ✔ (a party to the match) | `{ status: "confirmed" \| "rejected" }`; returned status cannot be set directly |
+| POST | `/:id/handover` | ✔ (a party to a confirmed match) | Creates a one-time QR handover link that expires in 15 minutes |
+| POST | `/:id/handover/confirm` | ✔ (a party to the match) | `{ token }`; both distinct participants must confirm before the match is returned and trust points are awarded |
 
 Each match includes an `aiExplanation` string — a short, Groq-generated
 sentence explaining why the two reports were matched (falls back to a
 template if `GROQ_API_KEY` isn't set). Real-time updates are pushed over
 Socket.IO to `io.to(userId)` as `notification:new` (new match / return) and
 `match:updated` (status change).
+
+External email, WhatsApp, and SMS match alerts contain only a generic notice
+and a sign-in link; item details and personal contact information remain in
+the authenticated app. WhatsApp and SMS require explicit user opt-in and
+configured provider credentials.
+WhatsApp messages sent outside the customer-service window also require a
+Meta-approved template configured in the backend environment.
 
 ## Messages — `/messages`
 

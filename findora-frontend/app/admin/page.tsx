@@ -63,18 +63,28 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminShell variant="admin">
-      {/* Gradient header banner */}
-      <div className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-brand-indigo via-brand-indigo to-brand-indigo-dark p-6 text-white shadow-lg shadow-brand-indigo/20">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="font-heading text-2xl font-bold">Admin Dashboard</h1>
-            <p className="mt-1 text-sm text-white/80">
-              Platform-wide insight into reports, recoveries and community activity.
+      <div className="relative mb-6 overflow-hidden rounded-3xl border border-slate-700/70 bg-gradient-to-br from-[#101d2b] via-[#1e3b52] to-[#315f70] p-6 text-white shadow-xl shadow-slate-900/10 sm:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-28 size-80 rounded-full border border-white/10 bg-white/[0.03]" />
+        <div className="pointer-events-none absolute -right-2 -top-16 size-52 rounded-full border border-white/10" />
+        <div className="relative flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-200">
+              <span className="size-1.5 rounded-full bg-emerald-300" />
+              Platform overview
+            </span>
+            <h1 className="mt-4 font-heading text-3xl font-semibold tracking-tight sm:text-4xl">Admin dashboard</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-200/85 sm:text-base">
+              A clear view of reports, community activity, and successful recoveries across Findora.
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold backdrop-blur">
-            <TrendingUp className="size-4" />
-            {data?.recoveryRate ?? 0}% recovery rate
+          <div className="flex min-w-48 items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-inner shadow-white/5 backdrop-blur">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-300/15 text-emerald-200">
+              <TrendingUp className="size-5" />
+            </span>
+            <div>
+              <p className="text-2xl font-semibold leading-none tabular-nums">{data?.recoveryRate ?? 0}%</p>
+              <p className="mt-1 text-xs text-slate-200/80">recovery rate</p>
+            </div>
           </div>
         </div>
       </div>
@@ -95,7 +105,7 @@ export default function AdminDashboardPage() {
               { name: "Lost", value: lostCount },
               { name: "Found", value: foundCount },
             ]}
-            colors={["#dc2626", "#16a34a"]}
+            colors={["#c87570", "#6f9f93"]}
           />
         </ChartCard>
 
@@ -105,7 +115,7 @@ export default function AdminDashboardPage() {
               { name: "Resolved", value: resolved },
               { name: "Pending", value: pending },
             ]}
-            colors={["#16a34a", "#f97316"]}
+            colors={["#6f9f93", "#c79a5b"]}
           />
         </ChartCard>
 
@@ -120,11 +130,11 @@ export default function AdminDashboardPage() {
       {/* Recovery gauge + trend */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <ChartCard title="Recovery rate" icon={TrendingUp}>
-          <GaugeChart value={data?.recoveryRate ?? 0} label="items returned to owners" />
+          <GaugeChart value={data?.recoveryRate ?? 0} color="#6f9f93" label="items returned to owners" />
         </ChartCard>
 
         <ChartCard title="Reports overview (last 6 months)" icon={BarChart3} className="lg:col-span-2">
-          <AreaTrendChart data={data?.trend ?? []} height={220} />
+          <AreaTrendChart data={data?.trend ?? []} height={220} color="#547b96" />
         </ChartCard>
       </div>
 
@@ -136,19 +146,80 @@ export default function AdminDashboardPage() {
         <LiveActivityFeed />
       </div>
 
-      {/* City pie + category bars */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ChartCard title="City-wise reports" icon={Building2}>
-          <PieBreakdown
-            data={(data?.topCities ?? []).map((c) => ({ name: c.city, value: c.count }))}
-            height={240}
-          />
+      {/* Connected ecosystem concept + category breakdown */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <ChartCard title="Connected ecosystem" icon={Building2} className="lg:col-span-2">
+          <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+            How people, reports, matching, and recovery partners can connect through Findora.
+          </p>
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-blue-50 via-white to-emerald-50 dark:border-slate-700 dark:from-slate-800 dark:via-slate-900 dark:to-emerald-950/30">
+            <svg
+              className="h-auto w-full"
+              viewBox="0 0 760 420"
+              role="img"
+              aria-labelledby="ecosystem-title ecosystem-description"
+            >
+              <title id="ecosystem-title">Findora connected ecosystem</title>
+              <desc id="ecosystem-description">
+                An illustrative workflow linking user reports to matching, future partner centers, and verified recovery.
+              </desc>
+              <defs>
+                <pattern id="ecosystem-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+                  <path
+                    d="M 32 0 L 0 0 0 32"
+                    fill="none"
+                    stroke="#94a3b8"
+                    strokeOpacity="0.14"
+                    strokeWidth="1"
+                  />
+                </pattern>
+                <linearGradient id="ecosystem-line" x1="0" x2="1">
+                  <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.28" />
+                  <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.55" />
+                  <stop offset="100%" stopColor="#34d399" stopOpacity="0.3" />
+                </linearGradient>
+              </defs>
+              <rect width="760" height="420" fill="url(#ecosystem-grid)" />
+              <g fill="none" stroke="url(#ecosystem-line)" strokeWidth="2">
+                <path d="M160 120 L360 200 L600 120" />
+                <path d="M160 280 L360 200 L600 280" />
+                <path d="M160 120 L600 280" />
+                <path d="M160 280 L600 120" />
+                <path d="M360 200 L600 120 L600 280" />
+              </g>
+              <g>
+                <circle cx="160" cy="120" r="7" fill="#2563eb" />
+                <circle cx="160" cy="280" r="7" fill="#0f172a" />
+                <circle cx="360" cy="200" r="9" fill="#203b59" />
+                <circle cx="600" cy="120" r="7" fill="#0f172a" />
+                <circle cx="600" cy="280" r="8" fill="#10b981" />
+                <circle cx="280" cy="130" r="5" fill="#64748b" />
+                <circle cx="505" cy="260" r="5" fill="#2563eb" />
+              </g>
+              <g fontFamily="Arial, sans-serif" fontSize="14" fontWeight="600">
+                <rect x="34" y="30" width="142" height="40" rx="20" fill="#dbeafe" />
+                <text x="105" y="55" fill="#1d4ed8" textAnchor="middle">User reports</text>
+
+                <rect x="536" y="30" width="190" height="40" rx="20" fill="#dcfce7" />
+                <text x="631" y="55" fill="#15803d" textAnchor="middle">Partner centers (future)</text>
+
+                <rect x="34" y="348" width="146" height="40" rx="20" fill="#fef3c7" />
+                <text x="107" y="373" fill="#a16207" textAnchor="middle">Smart matching</text>
+
+                <rect x="528" y="348" width="198" height="40" rx="20" fill="#e0e7ff" />
+                <text x="627" y="373" fill="#4338ca" textAnchor="middle">Verified recovery</text>
+              </g>
+            </svg>
+          </div>
+          <p className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-900 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-100">
+            Illustrative workflow only. The connections shown are not live partner integrations or real-time network data.
+          </p>
         </ChartCard>
 
         <ChartCard title="Category breakdown" icon={Layers}>
           <div className="space-y-3">
             {(data?.topCategories ?? []).map((c, i) => (
-              <div key={c.category}>
+              <div key={c.category} className="rounded-xl border border-slate-100 bg-white/70 p-3 dark:border-slate-800 dark:bg-slate-950/30">
                 <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                   <span>{c.category}</span>
                   <span className="font-semibold text-slate-700 dark:text-slate-200">{c.count}</span>
@@ -158,7 +229,7 @@ export default function AdminDashboardPage() {
                     className="h-full rounded-full transition-all duration-700"
                     style={{
                       width: `${(c.count / maxCategory) * 100}%`,
-                      background: ["#4338ca", "#2563eb", "#16a34a", "#f97316", "#dc2626", "#7c3aed"][i % 6],
+                      background: ["#294760", "#547b96", "#6f9f93", "#c79a5b", "#9d7775", "#71899a"][i % 6],
                     }}
                   />
                 </div>
