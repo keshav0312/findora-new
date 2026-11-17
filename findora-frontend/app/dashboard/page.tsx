@@ -391,6 +391,37 @@ export default function DashboardPage() {
 
   return (
     <DashboardShell>
+      <section className="relative mb-5 overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-sky-50/80 to-indigo-50/80 p-6 shadow-sm dark:border-slate-700/80 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/40 sm:p-8">
+        <div className="pointer-events-none absolute -right-12 -top-20 size-64 rounded-full bg-brand-indigo/10 blur-3xl dark:bg-brand-indigo/20" />
+        <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
+          <div className="max-w-2xl">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand-indigo dark:text-sky-200">
+              <Sparkles className="size-4" /> Your Findora dashboard
+            </p>
+            <h1 className="mt-2 font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
+              Welcome back, {user?.name?.split(" ")[0] || "there"}
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              Keep track of your reports, review possible matches, and help belongings find their way home.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-3">
+            <Link
+              href="/report/lost"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-brand-indigo px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-indigo/20 transition hover:-translate-y-0.5 hover:bg-brand-indigo-dark"
+            >
+              <MapPin className="size-4" /> Report lost item
+            </Link>
+            <Link
+              href="/report/found"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:text-emerald-200"
+            >
+              <PackageCheck className="size-4" /> Report found item
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/80 bg-white/75 px-4 py-2.5 shadow-sm backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/70">
         <p className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
           <span className={cn("size-2 rounded-full", stale ? "bg-amber-500" : "animate-pulse bg-emerald-500")} />
