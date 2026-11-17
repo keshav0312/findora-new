@@ -2,6 +2,7 @@
 
 import { io, Socket } from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
+import { getToken } from "./api";
 import { useAuth } from "./auth-context";
 import { haversineKm } from "./geo";
 import type { AppNotification } from "./types";
@@ -18,6 +19,7 @@ export function getSocket(): Socket {
       withCredentials: true,
       autoConnect: true,
       transports: ["websocket", "polling"],
+      auth: (callback) => callback({ token: getToken() }),
     });
   }
   return socketSingleton;

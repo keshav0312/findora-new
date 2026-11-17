@@ -158,7 +158,7 @@ export default function ChatPage() {
   }, [params.matchId]);
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, { auth: { token: getToken() } });
+    const socket = io(SOCKET_URL, { auth: (callback) => callback({ token: getToken() }) });
     socketRef.current = socket;
     socket.emit("conversation:join", conversationId);
     socket.on("message:new", (msg: ChatMessage) => {

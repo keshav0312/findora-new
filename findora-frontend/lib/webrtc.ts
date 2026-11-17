@@ -81,6 +81,7 @@ export function useCall(conversationId: string, otherPartyId?: string, otherPart
           getSocket().emit("call:signal", {
             to: targetId,
             from: user!.id,
+            conversationId,
             data: { type: "ice", candidate: e.candidate.toJSON() },
           });
         }
@@ -106,7 +107,7 @@ export function useCall(conversationId: string, otherPartyId?: string, otherPart
       pcRef.current = pc;
       return pc;
     },
-    [user]
+    [user, conversationId]
   );
 
   const processSignal = useCallback(async (from: string, data: SignalData) => {
@@ -122,7 +123,12 @@ export function useCall(conversationId: string, otherPartyId?: string, otherPart
       candidateQueue.current = [];
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      getSocket().emit("call:signal", { to: from, from: user!.id, data: { type: "answer", sdp: answer } });
+      getSocket().emit("call:signal", {
+        to: from,
+        from: user!.id,
+        conversationId,
+        data: { type: "answer", sdp: answer },
+      });
     } else if (data.type === "answer") {
       await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
       remoteDescSet.current = true;
@@ -132,7 +138,7 @@ export function useCall(conversationId: string, otherPartyId?: string, otherPart
       if (remoteDescSet.current) await pc.addIceCandidate(data.candidate);
       else candidateQueue.current.push(data.candidate);
     }
-  }, [user]);
+  }, [user, conversationId]);
 
   const drainQueue = useCallback(
     (from: string) => {
@@ -172,7 +178,12 @@ export function useCall(conversationId: string, otherPartyId?: string, otherPart
           conversationId,
           callType: type,
         });
-        getSocket().emit("call:signal", { to: otherPartyId, from: user.id, data: { type: "offer", sdp: offer } });
+        getSocket().emit("call:signal", {
+          to: otherPartyId,
+          from: user.id,
+          conversationId,
+          data: { type: "offer", sdp: offer },
+        });
       } catch (err) {
         setError((err as Error).message || "Couldn't access camera/microphone");
         cleanup();

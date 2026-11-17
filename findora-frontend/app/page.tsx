@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FileText,
   Sparkles,
@@ -129,9 +130,15 @@ function HeroImage() {
 }
 
 export default function LandingPage() {
+  const router = useRouter();
   const { user, loading } = useAuth();
   const dashboardHref =
     user?.role === "admin" ? "/admin" : user?.role === "police" ? "/police" : "/dashboard";
+
+  useEffect(() => {
+    if (!loading && user) router.replace(dashboardHref);
+  }, [dashboardHref, loading, router, user]);
+
   const footerColumns = FOOTER_COLUMNS.map((column) =>
     column.title === "Account" && user
       ? {

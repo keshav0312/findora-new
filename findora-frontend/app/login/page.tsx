@@ -22,9 +22,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login(form.email, form.password);
-      if (user.role === "admin") router.push("/admin");
-      else if (user.role === "police") router.push("/police");
-      else router.push("/dashboard");
+      if (user.role === "admin") router.replace("/admin");
+      else if (user.role === "police") router.replace("/police");
+      else router.replace("/dashboard");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {
