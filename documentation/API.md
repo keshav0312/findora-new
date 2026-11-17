@@ -110,4 +110,4 @@ All routes require role `admin` or `police` unless noted.
 
 ## Health check
 
-`GET /api/health` → `{ status: "success" }`
+`GET /api/health` (or `/health`) → `{ status: "success" }` (public; no token required)
