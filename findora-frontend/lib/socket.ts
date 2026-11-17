@@ -2,14 +2,13 @@
 
 import { io, Socket } from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
-import { API_URL } from "./api";
 import { useAuth } from "./auth-context";
 import { haversineKm } from "./geo";
 import type { AppNotification } from "./types";
 
-// The backend serves both REST (/api/*) and Socket.IO on the same port —
-// strip the trailing /api to get the bare origin Socket.IO connects to.
-const SOCKET_URL = API_URL.replace(/\/api\/?$/, "");
+export const SOCKET_URL = (
+  process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5001"
+).replace(/\/+$/, "");
 
 let socketSingleton: Socket | null = null;
 

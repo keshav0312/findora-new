@@ -466,51 +466,80 @@ export default function DashboardPage() {
 
       {/* Row 1 — Recovery Pulse (live AI scan) + Active near you map */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1220] via-[#0f1b33] to-[#0b1220] p-6 text-white lg:col-span-2">
-          <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-brand-indigo/20 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 left-10 size-56 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="flex flex-col gap-4 lg:col-span-2">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1220] via-[#0f1b33] to-[#0b1220] p-6 text-white lg:flex lg:grow lg:flex-col lg:justify-between">
+            <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-brand-indigo/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 left-10 size-56 rounded-full bg-emerald-500/10 blur-3xl" />
 
-          <div className="relative flex items-start justify-between">
-            <div>
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-200">
-                <Radar className="size-3.5" /> Your recovery activity
-              </p>
-              <p className="mt-1.5 text-sm text-slate-300">
-                {activeMatches.length > 0
-                  ? `${activeMatches.length} active possible match${activeMatches.length === 1 ? "" : "es"} to review.`
-                  : matches.length > 0
-                    ? "No active matches right now. Check your match history for updates."
-                    : totalReports > 0
-                      ? "No possible matches yet. Your open reports remain available for matching."
-                      : "Create a report to start your recovery journey."}
-              </p>
+            <div className="relative flex items-start justify-between">
+              <div>
+                <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-sky-200">
+                  <Radar className="size-3.5" /> Your recovery activity
+                </p>
+                <p className="mt-1.5 text-sm text-slate-300">
+                  {activeMatches.length > 0
+                    ? `${activeMatches.length} active possible match${activeMatches.length === 1 ? "" : "es"} to review.`
+                    : matches.length > 0
+                      ? "No active matches right now. Check your match history for updates."
+                      : totalReports > 0
+                        ? "No possible matches yet. Your open reports remain available for matching."
+                        : "Create a report to start your recovery journey."}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                {matches.length} {matches.length === 1 ? "match" : "matches"} found
+              </span>
             </div>
-            <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur">
-              {matches.length} {matches.length === 1 ? "match" : "matches"} found
-            </span>
+
+            {/* Animated flow visual: your reports -> AI core -> pipeline stages */}
+            <div className="relative mt-8 flex items-center justify-between gap-4">
+              <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-xs font-semibold text-slate-300">
+                You
+              </div>
+
+              <svg viewBox="0 0 200 60" className="h-14 flex-1" preserveAspectRatio="none">
+                <line x1="0" y1="30" x2="200" y2="10" stroke="#34d399" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.5" />
+                <line x1="0" y1="30" x2="200" y2="30" stroke="#818cf8" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.5" />
+                <line x1="0" y1="30" x2="200" y2="50" stroke="#fb923c" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.5" />
+                <circle cx="0" cy="30" r="5" fill="#6366f1">
+                  <animate attributeName="r" values="4;7;4" dur="2s" repeatCount="indefinite" />
+                </circle>
+              </svg>
+
+              <div className="flex shrink-0 flex-col gap-2">
+                <PulseStage color="emerald" label="Reported" value={totalReports} />
+                <PulseStage color="amber" label="Possible matches" value={activeMatches.length} />
+                <PulseStage color="indigo" label="Returned" value={returnedMatches.length} />
+              </div>
+            </div>
           </div>
 
-          {/* Animated flow visual: your reports -> AI core -> pipeline stages */}
-          <div className="relative mt-8 flex items-center justify-between gap-4">
-            <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-xs font-semibold text-slate-300">
-              You
+          <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-brand-indigo dark:bg-indigo-500/10 dark:text-sky-200">
+                {activeMatches.length > 0 ? <Sparkles className="size-5" /> : <FileText className="size-5" />}
+              </span>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-indigo dark:text-sky-200">
+                  Next step
+                </p>
+                <h2 className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {activeMatches.length > 0 ? "Review a possible match" : "Keep your reports up to date"}
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  {activeMatches.length > 0
+                    ? `You have ${activeMatches.length} possible match${activeMatches.length === 1 ? "" : "es"} waiting for review.`
+                    : "Add helpful details or check the status of your reports."}
+                </p>
+              </div>
             </div>
-
-            <svg viewBox="0 0 200 60" className="h-14 flex-1" preserveAspectRatio="none">
-              <line x1="0" y1="30" x2="200" y2="10" stroke="#34d399" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.5" />
-              <line x1="0" y1="30" x2="200" y2="30" stroke="#818cf8" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.5" />
-              <line x1="0" y1="30" x2="200" y2="50" stroke="#fb923c" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.5" />
-              <circle cx="0" cy="30" r="5" fill="#6366f1">
-                <animate attributeName="r" values="4;7;4" dur="2s" repeatCount="indefinite" />
-              </circle>
-            </svg>
-
-            <div className="flex shrink-0 flex-col gap-2">
-              <PulseStage color="emerald" label="Reported" value={totalReports} />
-              <PulseStage color="amber" label="Possible matches" value={activeMatches.length} />
-              <PulseStage color="indigo" label="Returned" value={returnedMatches.length} />
-            </div>
-          </div>
+            <Link
+              href={activeMatches.length > 0 ? "/matches" : "/my-reports"}
+              className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-indigo dark:bg-slate-700 dark:hover:bg-brand-indigo sm:self-center"
+            >
+              {activeMatches.length > 0 ? "Review matches" : "My reports"} <ArrowRight className="size-3.5" />
+            </Link>
+          </section>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
@@ -522,7 +551,7 @@ export default function DashboardPage() {
               Active near you
             </h2>
           </div>
-          <LiveMap className="aspect-square w-full" pins={nearbyPins} />
+          <LiveMap className="aspect-[4/3] w-full" pins={nearbyPins} />
         </div>
       </div>
 

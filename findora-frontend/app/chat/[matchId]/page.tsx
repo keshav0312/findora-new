@@ -28,7 +28,7 @@ import { LiveMap, MapPin as MapPinType } from "@/components/live-map";
 import { api } from "@/lib/api";
 import { getToken, API_URL } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { usePresence, useConversationSignals } from "@/lib/socket";
+import { SOCKET_URL, usePresence, useConversationSignals } from "@/lib/socket";
 import { useCall } from "@/lib/webrtc";
 import { useToast } from "@/lib/toast-context";
 import { ChatMessage, MatchRecord } from "@/lib/types";
@@ -158,8 +158,7 @@ export default function ChatPage() {
   }, [params.matchId]);
 
   useEffect(() => {
-    const socketUrl = API_URL.replace(/\/api\/?$/, "");
-    const socket = io(socketUrl, { auth: { token: getToken() } });
+    const socket = io(SOCKET_URL, { auth: { token: getToken() } });
     socketRef.current = socket;
     socket.emit("conversation:join", conversationId);
     socket.on("message:new", (msg: ChatMessage) => {
