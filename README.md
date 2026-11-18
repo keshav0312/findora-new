@@ -8,8 +8,27 @@ engine cross-checks every new report against open ones and surfaces likely
 matches in real time; matched users chat and arrange the return, earning
 trust points and climbing the community leaderboard along the way.
 
-This is a full-stack MVP designed to run **entirely locally** — no Docker,
-no cloud account required to get started. Just Node.js and MongoDB.
+This is a full-stack MVP designed to run **entirely locally** — no cloud
+account required to get started. Use local tools or the Docker Compose setup
+below.
+
+### Run the frontend, Spring Boot backend, and MongoDB with Docker Compose
+
+With Docker Desktop running, open a terminal at the repository root and run:
+
+```powershell
+cd C:\Users\DELL\Desktop\findora-new
+docker compose up --build
+```
+
+Open `http://localhost:3000`; the backend API and Socket.IO proxy are available
+at `http://localhost:8080`. Compose starts MongoDB, waits for the backend health
+check, and persists MongoDB data and backend uploads in named Docker volumes.
+To run it in the background, use `docker compose up --build -d`; view logs with
+`docker compose logs -f` and stop with `docker compose down`. The default JWT
+keys are for local development only; set `JWT_SECRET` and `JWT_REFRESH_SECRET`
+in a root `.env` file before using this setup beyond local development. Set
+`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` in that file if you want to enable Google Maps.
 
 ---
 

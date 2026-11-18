@@ -37,6 +37,23 @@ Socket.IO on separate ports, so production Socket.IO needs a publicly reachable
 endpoint or a reverse proxy routing Socket.IO traffic to the backend socket port.
 Also set the backend's `CORS_ORIGIN` to the frontend site URL.
 
+## Docker
+
+Build and run the production frontend image from this directory. Set the
+`NEXT_PUBLIC_` values to browser-reachable backend URLs; they are embedded
+during the image build.
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=https://your-backend.example/api \
+  --build-arg NEXT_PUBLIC_SOCKET_URL=https://your-backend.example \
+  -t findora-frontend .
+docker run --rm -p 3000:3000 findora-frontend
+```
+
+Open `http://localhost:3000`. If you use Google Maps, also pass
+`--build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-key` when building.
+
 ## Pages
 
 | Route | Purpose |

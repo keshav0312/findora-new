@@ -1,0 +1,55 @@
+services:
+  frontend:
+    build:
+      context: ./findora-frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:8080}
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./findora-springboot-backend
+      dockerfile: Dockerfile
+    environment:
+      PORT: "10000"
+      SERVER_PORT: "8080"
+      SOCKET_PORT: "5001"
+      SERVER_ADDRESS: "127.0.0.1"
+      SOCKET_HOST: "127.0.0.1"
+      MONGODB_URI: "mongodb://mongo:27017/findora"
+      JWT_SECRET: ${JWT_SECRET:-local-compose-access-secret-change-before-deployment-32}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-local-compose-refresh-secret-change-before-deployment-32}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      UPLOAD_DIR: "/app/uploads"
+    ports:
+      - "${BACKEND_PORT:-8080}:10000"
+    volumes:
+      - backend-uploads:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  backend-uploads:
+  mongo-data:
