@@ -1,0 +1,3 @@
+[submodule "findora-springboot-backend"]
+	path = findora-springboot-backend
+	url = https://github.com/keshav0312/findora_backend_springboot.git
